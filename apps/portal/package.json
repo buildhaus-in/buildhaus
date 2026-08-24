@@ -1,0 +1,43 @@
+{
+  "name": "@buildhaus/portal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "seed:users": "node scripts/seed-users.mjs"
+  },
+  "dependencies": {
+    "@buildhaus/ui": "*",
+    "@buildhaus/brand": "*",
+    "@buildhaus/database": "*",
+    "@buildhaus/utils": "*",
+    "@buildhaus/types": "*",
+    "@buildhaus/validation": "*",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "zod": "^3.23.8",
+    "@hookform/resolvers": "^3.9.0",
+    "recharts": "^2.12.7",
+    "clsx": "^2.1.1",
+    "@react-pdf/renderer": "^3.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.10",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.15"
+  }
+}

@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* BuildHaus palette (mirrors colors.ts for raw CSS use) */
+  --bg: #f5f6f6;
+  --surface: #edefef;
+  --card: #ffffff;
+  --border: #dcdeda;
+  --brand: #f15623;
+  --sand: #4a5b6e;
+  --sand-light: #33465c;
+  --ivory: #0b263a;
+  --ok: #1f7a4d;
+  --warn: #a87400;
+  --danger: #b3261e;
+  --muted: #7a8694;
+  --ink: #24384f;
+  --navy: #0b263a;
+  --royal: #273b85;
+  --sky: #abcfdf;
+  --sky-soft: #e3eef4;
+  --stone: #c7c8c2;
+  --font-sans: "Inter", -apple-system, system-ui, sans-serif;
+  --font-display: "Poppins", var(--font-sans);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings carry the display face (Poppins — the closest widely-available
+   stand-in for the brand's Hilmar) without per-page class edits. */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Inputs adopt brand focus ring */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brand) !important;
+}
+
+/* Thin scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 3px; }
+
+/* Keyboard focus visibility (a11y floor) */
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+
+.spinner {
+  display:inline-block; width:14px; height:14px;
+  border:2px solid var(--border); border-top-color:var(--brand);
+  border-radius:50%; animation: spin .8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}

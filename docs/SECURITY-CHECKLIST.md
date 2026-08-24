@@ -1,0 +1,93 @@
+# Buildhaus — Security test checklist
+
+This is a working checklist, not a certification. It covers the two enforcement layers in this codebase, walks through what a curious or malicious actor could try, and states plainly — including where it's currently a gap — whether each is blocked and how. Written alongside `supabase/migrations/0012_website_content.sql`, `0013_website_content_rls.sql`, and `0014_quotation_public_tokens.sql`; re-check it whenever a new table or public route lands.
+
+## The two enforcement layers
+
+1. **Row-Level Security (Postgres)** — the authoritative layer, once a real Supabase project is configured (`NEXT_PUBLIC_SUPABASE_URL` set, see `docs/DEPLOYMENT.md`). Every table has `alter table ... enable/force row level security`; policies live in `supabase/migrations/0010_rls_policies.sql`, `0013_website_content_rls.sql`, `0014_quotation_public_tokens.sql`, plus a couple defined inline in `0011_triggers_functions.sql`. Verified while writing this doc: every one of the 73 tables created across `0001`–`0009`/`0012`/`0014` has at least one policy attached (either directly, or via the `daily_report_*` children's dynamic policy loop in `0010`) — none are silently left at Postgres's zero-policy default-deny.
+2. **Explicit application-level scoping (Demo Mode)** — required because Demo Mode (`packages/database/src/demo/`, active whenever `NEXT_PUBLIC_SUPABASE_URL` is unset) is an in-memory/file-backed mock with **no RLS at all**. Every query runs with full access to every row; the only thing standing between one user and another user's data is whether the page's own query included an explicit `.eq("profile_id", ctx.userId)` / `.eq("project_id", ...)` / membership check. This is why `apps/portal/src/app/(app)/engineer/page.tsx`, `architect/page.tsx`, and `client/page.tsx` all carry a comment to that effect, and why the spot-check below exists.
+
+Both layers matter because Demo Mode and real-Supabase mode are meant to be interchangeable with zero code changes (`packages/database/src/index.ts`'s `createClient()` decides which one at runtime) — a query that only "works" because RLS silently filters it, but was written to fetch broadly, will leak data the moment someone runs it against Demo Mode instead.
+
+---
+
+## What a curious/malicious actor could try
+
+| Attempt | Blocked? | How |
+|---|---|---|
+| Guess another project's URL ID (`/owner/projects/<other-id>`) as Owner | N/A — Owner sees all projects in the org by design | — |
+| Guess another project's URL ID as Engineer/Architect | **Yes** | Every project-detail/task/drawing page under `engineer/*` and `architect/*` re-derives membership from `project_members` (or the task/drawing's own assignee column) and calls `notFound()` if it doesn't match — see `engineer/projects/[id]/page.tsx`, `engineer/tasks/[id]/page.tsx`, `architect/drawings/[id]/page.tsx`. Confirmed present on every project/task/drawing detail route checked. Real RLS (`is_project_member()`) backs this up independently once a real Supabase project is live |
+| Guess another client's receipt/invoice/project URL ID as a Client | **Yes** | `client/payments/receipts/[id]/page.tsx` re-derives the signed-in client's own project and explicitly checks `receipt.project_id !== project.id` before rendering, with a code comment calling out that Demo Mode has no RLS to fall back on. `client/documents`, `client/approvals`, `client/change-requests`, `client/progress`, `client/photos` all re-derive `clients.profile_id → project.client_id` per request rather than trusting a cached/passed project id |
+| Tamper with the Demo Mode session cookie to become another user (e.g. set `bh_demo_session=profile-owner`) | **No — see "Known gap" below** | This is the most important finding in this document |
+| Hit a role-gated URL prefix while signed in as the wrong role (e.g. a Client requesting `/owner/finance`) for a **page** | **Yes** | `apps/portal/src/app/(app)/layout.tsx` computes the signed-in user's `ROLE_ALLOWED_PREFIXES` (`apps/portal/src/lib/rbac.ts`) and `redirect(home)`s if the current path isn't covered. `middleware.ts` separately blocks any `/owner`, `/engineer`, `/architect`, `/client` path for a signed-out visitor |
+| Hit a role-gated URL for a **Route Handler** (`route.ts`), not a page | **Was a real gap — fixed during this review** | Next.js Route Handlers are not wrapped by the segment's `layout.tsx` — only page renders go through that React tree. `middleware.ts` only checks "is someone signed in," not which role. `apps/portal/src/app/(app)/owner/quotations/[id]/download/route.ts` (the quotation PDF download) queried and returned a quotation with no role or org check at all — any authenticated Engineer/Architect/Client could have hit that URL directly and read another client's quotation (mobile number, full cost breakdown). Fixed in this pass by adding the same `getUserContext()` + `roles.includes("owner")` assertion every `owner/*/actions.ts` Server Action already uses, plus an explicit `organisation_id` match. Every other `route.ts` under an app-role prefix (there is exactly one other: `apps/portal/src/app/auth/signout/route.ts`) was checked and doesn't need the same fix (sign-out has nothing to authorize) |
+| Invoke an Owner-only Server Action directly (bypassing the page it's normally submitted from) | **Yes** | Every `owner/*/actions.ts` file (`clients`, `crm`, `finance`, `materials`, `labour`, `estimator`, `settings`, `quality`, `suppliers`, `website`, ...) opens with an `assertOwner()`/inline equivalent that throws before touching the database. Verified across all of them, including the newly-landed `owner/website/actions.ts` (CMS) |
+| Enumerate every live public quotation share-token (`quotation_public_tokens`) in one request | **Partially — documented limitation, not fully closed** | See "Known gap" below on `quotation_public_tokens` |
+| Forge a `quotation_public_tokens` row pointing at someone else's quotation | **Yes** | `0014_quotation_public_tokens.sql` deliberately grants **no** `anon` INSERT policy on this table (a permissive one would let anyone self-issue access to any `quotation_id`). The legitimate token-issuing code path (`apps/website/src/app/cost-estimator/actions.ts`) writes via the service-role `createAdminClient()` instead, and generates the token server-side (`randomBytes(24)`) against the quotation it just created in the same function — a visitor never supplies a `quotation_id` |
+| Read another org's data (multi-tenant leakage) | **N/A today, correctly scaffolded for later** | Single-org MVP (`organisations` has one row). Every org-scoped table's owner policy checks `organisation_id = current_org_id()`, so the seam is real, just currently trivial (`current_org_id()` only ever resolves to the one org). `testimonials`/`faqs`/`website_pages`/`website_sections` deliberately have **no** `organisation_id` column (see `0012_website_content.sql`'s header comment) — a conscious call given this is public marketing content and a future multi-tenant version of this product would need to revisit that, not an oversight |
+| Read draft (unpublished) testimonials/FAQs/pages/sections as a public site visitor | **Yes** | `0013_website_content_rls.sql`'s anon `select` policies are all scoped `using (is_published = true)`. Demo Mode side: `apps/website/src/app/faq/page.tsx` explicitly filters `.eq("is_published", true)` itself too (belt and suspenders — matters because Demo Mode has no RLS to fall back on if that filter were ever dropped) |
+| Read another client's payment schedule/invoices/receipts by knowing the amount/date pattern | **Yes** | `client_payment_schedules`/`client_invoices`/`client_receipts` RLS (`0010`) all scope to `is_project_client(project_id)`; Demo Mode pages re-derive the client's own project first (see above) |
+
+---
+
+## Known gaps — read before deploying this anywhere public
+
+### 1. Demo Mode's session cookie is not cryptographically signed
+
+`packages/database/src/demo/client.ts`: `cookies().get("bh_demo_session")?.value` is used directly as a profile ID with no HMAC, no JWT, nothing. `httpOnly: true` stops **JavaScript** on the page from reading/writing it, but does not stop:
+- Anyone with access to the browser's own devtools (Application → Cookies) setting it to any known profile ID and becoming that user — Owner included, with zero password.
+- A network path without TLS observing/injecting it (mitigated in practice by deploying behind HTTPS, which Vercel does by default — but the cookie itself still carries no integrity protection even over TLS).
+- Any future XSS elsewhere on the same origin.
+
+**This is fine for a local/internal demo tool and is exactly what Demo Mode is for.** It becomes a real vulnerability the moment Demo Mode's code path is what's actually running behind a public production URL. **Recommendation, stated plainly: never deploy Demo Mode publicly.** `docs/DEPLOYMENT.md` §1 states this up front and links back here. The fix, when a real deployment is needed, is simply to configure a real Supabase project (Section 4 of that doc) — `createClient()` then returns the real `@supabase/ssr` client with real signed auth cookies and RLS, automatically, no code change required elsewhere.
+
+### 2. `quotation_public_tokens` — RLS can't fully prevent enumeration, only application discipline can
+
+Task requirement was: anon can resolve a specific token, but can't list/enumerate all tokens. The honest technical answer: **Postgres RLS predicates are evaluated per row and cannot distinguish "the caller filtered on an exact token value" from "the caller ran a bare `SELECT *`."** A policy permissive enough to let `.eq("token", X)` succeed is, by construction, exactly as permissive for a query with no filter at all — RLS has no concept of "this query had a WHERE clause."
+
+Given the token is 192 bits of randomness (`randomBytes(24)` in `cost-estimator/actions.ts`) and the actual shipped consumers (`apps/website/src/app/quotation/[token]/page.tsx`, `.../pdf/route.ts`) only ever query by exact token, the practical residual risk is: anyone with the ability to run arbitrary PostgREST queries against this table (a leaked anon key is not sufficient for that risk — anon keys are meant to be public; this requires either a leaked *service role* key, or some future admin/API surface that does a bare unfiltered `select()` against `quotation_public_tokens`) could dump every live token in one request. `0014_quotation_public_tokens.sql` documents this in detail and recommends, for any *future* unguessable-token table, a `SECURITY DEFINER` RPC (`resolve_token(text) returns ...`) instead of a direct table grant — a function only ever returns a row for the exact token it's called with, closing this gap completely. Retrofitting that onto `quotation_public_tokens` itself would require rewriting the already-shipped `page.tsx`/`pdf/route.ts` consumers; noted as a possible follow-up, not done in this pass to avoid rewriting a concurrently-developed feature.
+
+**Action item for whoever builds an Owner-facing "list/revoke tokens" screen later: query through the portal's Owner-only policy (`qpt_owner`, `is_owner()`-gated), never add a second broader `anon`/`authenticated` SELECT policy to this table.**
+
+### 3. The public quotation flow (cost estimator → share link → PDF) — **was a real gap, since fixed**
+
+Originally: `apps/website/src/app/cost-estimator/actions.ts` (`generateQuotation`), `apps/website/src/app/quotation/[token]/page.tsx`, `.../pdf/route.ts`, and `.../actions.ts` all used the ordinary RLS-bound `createClient()` as an **anonymous** visitor to insert into `leads`/`quotations`/`quotation_versions`/`lead_activities`/`quotation_public_tokens`, and to read `quotations`/`quotation_versions`/`leads`/`material_catalogue` by ID — none of which grant `anon` any access under `0010_rls_policies.sql` (deliberately so, since they hold customer PII and cost data). Demo Mode masked this entirely; under a real Supabase project every call would have returned `null`/empty rather than error (RLS-filtered `SELECT`s don't error, they just return nothing — a quieter failure mode than a 403).
+
+**Fixed** by switching those specific reads/writes (plus the `estimator_packages`/`estimator_rates` reads inside `computeFromInputs`, which are `authenticated`-only under `0010` and would have broken the estimate computation the same way) to the service-role `createAdminClient()` — matching the precedent `0010`'s own comments set for public access ("handled server-side with the service context for anonymous website visitors"). Two invariants that fix depends on, both commented at the call sites: (1) the token-resolution checks (`revoked`, `expires_at`) in `page.tsx`/`pdf/route.ts` are now the **only** gate, since the service role bypasses `qpt_public_read`'s scoping — never remove them; (2) `generateQuotation` builds every written value server-side (the visitor never supplies a `quotation_id` or any other row-targeting value), so bypassing RLS does not widen what a visitor can touch. Residual accepted surface: `quotation/[token]/actions.ts` inserts a fixed-template `lead_activities` note against a form-supplied `lead_id` — spam-level risk equivalent to any public contact form, no read-back.
+
+Note: other public website pages that read `estimator_packages` via the anon-bound client (`cost-estimator/page.tsx`, `packages/*`, `services/[slug]`, `sitemap.ts`) have the same latent issue and render empty (not broken) under real RLS — tracked separately, not part of this fix.
+
+### 4. `next_code()` RPC — unrelated correctness bug found in passing, not a security issue
+
+`cost-estimator/actions.ts` calls `supabase.rpc("next_code", { p_scope, p_prefix })`, omitting the required `p_org` parameter that `0011_triggers_functions.sql`'s `next_code(p_org uuid, p_scope text, p_prefix text)` needs. Demo Mode's RPC stand-in ignores unused params so this is invisible today; under real PostgREST it will 404. Flagged as a separate background task (`Fix next_code() RPC signature mismatch in cost-estimator`) since it's a functional bug, not an access-control one.
+
+### 5. `packages/database/src/storage.ts` — real Supabase Storage branch is unimplemented, on purpose
+
+Worth noting as a **positive**, not a gap: `uploadFile()` throws loudly ("real Supabase Storage is not implemented...") in the non-Demo-Mode branch instead of silently returning a broken URL. Anyone wiring up a real Supabase project will hit this immediately and loudly if any upload flow is exercised, rather than shipping a quietly-broken file upload. No file-upload route has landed in the portal yet as of this review (drawings currently take a plain File URL text field, not a real upload) — re-check this section once one does, since it'll need real Supabase Storage bucket policies (not just table RLS) designed at that point.
+
+---
+
+## New-table RLS coverage added in this pass
+
+| Table | Exists in | Owner access | Public/anon access | Migration |
+|---|---|---|---|---|
+| `testimonials` | Demo seed only (no prior migration) | Full (`is_owner()`) | `select` where `is_published = true` | `0012` (table) + `0013` (RLS) |
+| `faqs` | Demo seed only (no prior migration) | Full | `select` where `is_published = true` | `0012` + `0013` |
+| `website_pages` | Demo seed only (no prior migration) | Full | `select` where `is_published = true` | `0012` + `0013` |
+| `website_sections` | Demo seed only (no prior migration) | Full | `select` where `is_published = true` | `0012` + `0013` |
+| `quotation_public_tokens` | Demo seed + live consumer code (no prior migration) | Full | `select` scoped to `revoked = false and not expired` (see gap #2 above); no `insert` (see gap #3) | `0014` |
+| `subcontractors` | **Not found** — no migration, no Demo Mode seed entry, no consuming code anywhere in the repo (checked `packages/database/src/demo/seed.ts`, `relations.ts`, and a repo-wide grep) as of this review. `labour_contractors.is_subcontractor` (a boolean column, `0007_labour_finance_quality.sql`) is the closest existing thing and is a different concept. **Skipped per instructions** — re-run the grep below when this table lands and add its RLS then | — | — |
+
+```
+grep -rln "subcontractor" --include="*.ts" --include="*.tsx" --include="*.sql" .
+```
+
+---
+
+## Spot-check log (Demo Mode explicit-scoping discipline)
+
+Pages/routes read in full during this review, beyond the three reference implementations already named in the task (`engineer/page.tsx`, `architect/page.tsx`, `client/page.tsx`):
+
+`client/documents`, `client/payments/receipts/[id]`, `client/change-requests`, `client/approvals`, `engineer/tasks/[id]`, `engineer/projects/[id]`, `engineer/materials`, `engineer/issues`, `architect/drawings/[id]`, `owner/website` (+ `actions.ts`, + `pages/[slug]`), `owner/quotations/[id]/download/route.ts`, `apps/website/quotation/[token]/page.tsx`, `.../pdf/route.ts`, `.../actions.ts`, `apps/website/cost-estimator/actions.ts`.
+
+Result: one real bug found and fixed (item in the table above, `owner/quotations/[id]/download/route.ts`). Everything else already followed the established pattern — re-deriving the signed-in user's own project/client/task/drawing from `project_members`/`clients.profile_id`/assignee columns on every request, never trusting a passed-in ID without an ownership check, and never assuming Demo Mode enforces anything RLS would have enforced.

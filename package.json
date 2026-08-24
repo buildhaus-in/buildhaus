@@ -1,0 +1,35 @@
+{
+  "name": "buildhaus",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:website & npm run dev:portal & wait",
+    "dev:website": "npm run dev --workspace=apps/website",
+    "dev:portal": "npm run dev --workspace=apps/portal",
+    "build": "npm run build:website && npm run build:portal",
+    "build:website": "npm run build --workspace=apps/website",
+    "build:portal": "npm run build --workspace=apps/portal",
+    "typecheck": "npm run typecheck --workspace=apps/website && npm run typecheck --workspace=apps/portal",
+    "lint": "npm run lint --workspace=apps/website && npm run lint --workspace=apps/portal",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "seed": "node scripts/seed-users.mjs",
+    "demo:reset": "node scripts/reset-demo-data.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.9",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "jsdom": "^25.0.1",
+    "@playwright/test": "^1.48.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
