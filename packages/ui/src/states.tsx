@@ -31,3 +31,11 @@ export function ErrorState({ message }: { message: string }) {
     </div>
   );
 }
+
+export function SuccessState({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl2 border border-ok/40 bg-ok/10 p-5 text-sm text-ok">
+      {message}
+    </div>
+  );
+}

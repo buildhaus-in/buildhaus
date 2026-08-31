@@ -1,9 +1,8 @@
 import { createClient } from "@buildhaus/database";
-import { Card, StatusBadge, Button } from "@buildhaus/ui";
-import { Input, Select } from "@buildhaus/ui";
+import { Card, StatusBadge } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, sqft, dateLabel } from "@buildhaus/utils";
-import { createProject } from "./actions";
+import { CreateProjectForm } from "./CreateProjectForm";
 import Link from "next/link";
 
 export default async function Projects() {
@@ -17,21 +16,7 @@ export default async function Projects() {
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-ivory">Projects</h1>
 
-      <Card>
-        <h2 className="mb-3 font-bold text-ivory">New project</h2>
-        <form action={createProject} className="grid gap-x-4 sm:grid-cols-2">
-          <Input label="Project name" name="name" placeholder="Sunil Reddy G+2 Duplex" required />
-          <Select label="Type" name="project_type" defaultValue="duplex">
-            {["independent_house","villa","duplex","apartment","office","commercial","warehouse","factory","interior","renovation"]
-              .map((t) => <option key={t} value={t}>{t.replace(/_/g," ")}</option>)}
-          </Select>
-          <Input label="Site address" name="site_address" placeholder="Kotha Kalava, Nellore" />
-          <Input label="Built-up area (sqft)" name="builtup" type="number" />
-          <Input label="Floors" name="floors" type="number" />
-          <Input label="Contract value (₹)" name="contract_value" type="number" />
-          <div className="sm:col-span-2"><Button type="submit">Create project</Button></div>
-        </form>
-      </Card>
+      <CreateProjectForm />
 
       {(!projects || projects.length === 0) ? (
         <EmptyState title="No projects yet" hint="Create one above, or convert a won lead in CRM." />
