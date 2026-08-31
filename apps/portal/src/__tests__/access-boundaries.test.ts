@@ -2,11 +2,26 @@
 //
 // Security / access-boundary tests, run as real HTTP requests against the
 // already-running portal dev server (localhost:3001) — this exercises the
-// actual middleware (apps/portal/middleware.ts), the (app) layout guard,
-// and each page's own ownership checks, rather than re-implementing that
-// logic against the demo data layer directly. Demo Mode's "session" is just
-// the `bh_demo_session` cookie holding a profile id (see
+// actual middleware (apps/portal/src/middleware.ts), the (app) layout
+// guard, and each page's own ownership checks, rather than re-implementing
+// that logic against the demo data layer directly. Demo Mode's "session" is
+// just the `bh_demo_session` cookie holding a profile id (see
 // packages/database/src/demo/client.ts) — no login flow needed to set it.
+//
+// This file is what caught the most severe bug found in this whole repair
+// pass: middleware.ts was sitting at apps/portal/middleware.ts instead of
+// apps/portal/src/middleware.ts (this project uses a `src` directory, which
+// Next.js requires middleware.ts to live alongside) — so it was NEVER
+// running, with no build error or warning. That file is what injects the
+// x-pathname header apps/portal/src/app/(app)/layout.tsx's
+// ROLE_ALLOWED_PREFIXES check depends on, so cross-role blocking was
+// completely inert: a Site Engineer's session could load /owner directly.
+// The "cross-role prefix blocking" and "middleware-only redirects" describe
+// blocks below exist specifically to catch this class of regression again —
+// they were the only tests in this file that actually depended on
+// middleware.ts running (the "no session cookie" tests below happened to
+// keep passing throughout, because apps/portal/src/app/(app)/layout.tsx has
+// its own independent `if (!ctx) redirect("/login")` fallback).
 //
 // Relies on the fixed seed data in packages/database/src/demo/seed.ts:
 //   - profile-engineer is a site_engineer on project-villa and
@@ -52,6 +67,75 @@ describe("anonymous access is redirected to /login", () => {
       expect(res.headers.get("location") ?? "").toContain("/login");
     }
   );
+});
+
+describe("middleware-only redirects (apps/portal/src/middleware.ts)", () => {
+  // Unlike the "no session cookie" tests above, these two behaviors have NO
+  // fallback anywhere else in the app — they only ever happen if
+  // middleware.ts is actually running. Direct regression coverage for the
+  // "wrong file location, silently never executes" bug documented above.
+  it("a signed-in user visiting /login is redirected away, not shown the login form", async () => {
+    const res = await fetch(`${PORTAL}/login`, { headers: cookieFor("profile-owner"), redirect: "manual" });
+    expect([301, 302, 307, 308]).toContain(res.status);
+    expect(res.headers.get("location") ?? "").not.toContain("/login");
+  });
+
+  it("GET / redirects to /login when signed out, and away from /login when signed in", async () => {
+    const signedOut = await fetch(`${PORTAL}/`, { redirect: "manual" });
+    expect([301, 302, 307, 308]).toContain(signedOut.status);
+    expect(signedOut.headers.get("location") ?? "").toContain("/login");
+
+    const signedIn = await fetch(`${PORTAL}/`, { headers: cookieFor("profile-owner"), redirect: "manual" });
+    expect([301, 302, 307, 308]).toContain(signedIn.status);
+    expect(signedIn.headers.get("location") ?? "").not.toContain("/login");
+  });
+});
+
+describe("cross-role prefix blocking ((app) layout's ROLE_ALLOWED_PREFIXES)", () => {
+  // Each blocked request must redirect to the caller's OWN home, not /login
+  // (they're signed in — this isn't an auth failure) and not just pass
+  // through. Repair-plan Phase 1 test items #2, #3, #11.
+  it.each([
+    ["profile-engineer", "/owner", "/engineer"],
+    ["profile-engineer", "/owner/users", "/engineer"],
+    ["profile-engineer", "/owner/finance", "/engineer"],
+    ["profile-engineer", "/owner/settings", "/engineer"],
+    ["profile-architect", "/owner", "/architect"],
+    ["profile-architect", "/owner/users", "/architect"],
+    ["profile-architect", "/owner/finance", "/architect"],
+    ["profile-architect", "/engineer/report", "/architect"],
+    ["profile-client", "/owner/users", "/client"],
+    ["profile-client", "/owner/finance", "/client"],
+    ["profile-client", "/engineer/report", "/client"],
+    ["profile-client", "/architect/drawings/new", "/client"],
+  ])("%s requesting %s is redirected to %s, not served", async (profileId, route, expectedHome) => {
+    const res = await fetch(`${PORTAL}${route}`, { headers: cookieFor(profileId), redirect: "manual" });
+    expect([301, 302, 307, 308]).toContain(res.status);
+    expect(res.headers.get("location") ?? "").toContain(expectedHome);
+  });
+
+  it("the Owner is NOT blocked from any role's section (owner sees all)", async () => {
+    for (const route of ["/owner", "/engineer", "/architect", "/client"]) {
+      const res = await fetch(`${PORTAL}${route}`, { headers: cookieFor("profile-owner"), redirect: "manual" });
+      expect(res.status).toBe(200);
+    }
+  });
+});
+
+describe("client document/photo visibility (client_visible flag)", () => {
+  // Regression coverage for the repair-plan's "client visibility is opt-in"
+  // requirement (Phase 1 test #10) — client/documents/page.tsx filters on
+  // `.eq("client_visible", true)`; doc-3 in the seed data
+  // (packages/database/src/demo/seed.ts) is deliberately client_visible:
+  // false on the client's own project (project-villa), so this proves the
+  // filter is actually applied, not just present in a query that never runs.
+  it("does not list a document marked client_visible: false, even on the client's own project", async () => {
+    const res = await fetch(`${PORTAL}/client/documents`, { headers: cookieFor("profile-client") });
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Construction agreement"); // doc-1, client_visible: true
+    expect(html).not.toContain("Internal cost estimate workbook"); // doc-3, client_visible: false
+  });
 });
 
 describe("engineer project scoping (project_members)", () => {
