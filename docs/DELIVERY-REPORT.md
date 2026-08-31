@@ -131,7 +131,7 @@ npm run test:e2e      # Playwright (servers must be running)
 
 ## 14. Environment variables
 
-See `apps/website/.env.example` and `apps/portal/.env.example`. Demo Mode activates automatically when `NEXT_PUBLIC_SUPABASE_URL` is unset. Key vars: `NEXT_PUBLIC_WEBSITE_URL`, `NEXT_PUBLIC_PORTAL_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-only), `ANTHROPIC_API_KEY` (server-only, optional — AI assistant stays in labelled canned mode without it).
+See `apps/website/.env.example` and `apps/portal/.env.example`. Demo Mode activates automatically when `NEXT_PUBLIC_SUPABASE_URL` is unset. Key vars: `NEXT_PUBLIC_WEBSITE_URL`, `NEXT_PUBLIC_PORTAL_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server-only), `ANTHROPIC_API_KEY` (server-only, currently unread by the codebase — the AI assistant is hardcoded to canned responses regardless; reserved for a future real integration).
 
 ## 15. Supabase + deployment
 
