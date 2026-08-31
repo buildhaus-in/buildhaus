@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Button, Badge, buttonClass } from "@buildhaus/ui";
 import { Input, Textarea, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -84,8 +84,12 @@ export default async function WebsiteContentPage({
                     </div>
                     <div className="text-xs text-muted">/{p.slug === "home" ? "" : p.slug} · updated {dateLabel(p.updated_at)}</div>
                   </div>
-                  <Link href={`/owner/website/pages/${p.slug}`}>
-                    <Button variant="outline">Edit →</Button>
+                  {/* A <Button> (renders <button>) nested inside this <Link>
+                      (renders <a>) is invalid content model — interactive
+                      content inside interactive content. buttonClass()
+                      applies the same visual style directly to the anchor. */}
+                  <Link href={`/owner/website/pages/${p.slug}`} className={buttonClass("outline")}>
+                    Edit →
                   </Link>
                 </div>
               ))}

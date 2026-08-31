@@ -1,17 +1,28 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { revalidatePath } from "next/cache";
 
 const ITEM_SLOTS = 6;
 
+// Previously only checked "is anyone signed in" — never role or project
+// membership. See engineer/attendance/actions.ts for the full rationale.
 export async function createMaterialRequest(formData: FormData) {
   const supabase = createClient();
-  const ctx = await getUserContext();
-  if (!ctx?.userId) return;
+  let ctx;
+  try {
+    ctx = await assertRole("site_engineer");
+  } catch {
+    return;
+  }
 
   const projectId = String(formData.get("project_id") || "");
   if (!projectId) return;
+  try {
+    await assertProjectAccess(supabase, projectId, ctx);
+  } catch {
+    return;
+  }
 
   const { data: request } = await supabase
     .from("material_requests")

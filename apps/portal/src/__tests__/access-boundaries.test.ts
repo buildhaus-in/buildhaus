@@ -82,6 +82,53 @@ describe("architect project scoping (project_members)", () => {
   });
 });
 
+describe("/uploads/[...path] — project-scoped file serving", () => {
+  // Regression coverage for the Phase 0 finding: this route previously had
+  // no authorization at all (any request, signed in or not, that knew or
+  // guessed a path got the file back). It now requires a session and checks
+  // canViewProject() against the path's project-id segment before even
+  // looking at disk — proven here by using a path that doesn't exist on
+  // disk and confirming the *reason* for the non-200 differs by caller
+  // (401/403 before the file-existence check, vs 404 after it).
+  it("unauthenticated request is rejected before the file-existence check", async () => {
+    const res = await fetch(`${PORTAL}/uploads/documents/project-villa/does-not-exist.pdf`, {
+      redirect: "manual",
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("a project member for a DIFFERENT project is rejected, not served/404'd", async () => {
+    // profile-engineer is assigned to project-villa and project-duplex, but
+    // not project-commercial (see file header) — reading from a project
+    // they're not on must fail closed at the auth check, not fall through
+    // to "file not found."
+    const res = await fetch(`${PORTAL}/uploads/documents/project-commercial/does-not-exist.pdf`, {
+      headers: cookieFor("profile-engineer"),
+      redirect: "manual",
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it("a member of the project clears the auth check (fails on file existence instead)", async () => {
+    // profile-engineer IS assigned to project-villa — this must get past
+    // canViewProject() and only 404 because the file itself doesn't exist,
+    // proving the authorization check isn't what's blocking it.
+    const res = await fetch(`${PORTAL}/uploads/documents/project-villa/does-not-exist.pdf`, {
+      headers: cookieFor("profile-engineer"),
+      redirect: "manual",
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("the Owner clears the auth check for any project", async () => {
+    const res = await fetch(`${PORTAL}/uploads/documents/project-commercial/does-not-exist.pdf`, {
+      headers: cookieFor("profile-owner"),
+      redirect: "manual",
+    });
+    expect(res.status).toBe(404);
+  });
+});
+
 describe("client scoping (clients.profile_id -> projects.client_id)", () => {
   it("can open a receipt that belongs to their own project", async () => {
     const res = await fetch(`${PORTAL}/client/payments/receipts/rcpt-1`, {

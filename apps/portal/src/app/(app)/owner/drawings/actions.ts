@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { revalidatePath } from "next/cache";
+import { assertOwner } from "@/lib/authz";
 
 // Owner/Client-facing side of the drawing approval workflow. The Architect
 // portal (src/app/(app)/architect/drawings/actions.ts) can draft, revise and
@@ -8,6 +9,12 @@ import { revalidatePath } from "next/cache";
 // owner_review -> client_review -> approved -> approved_for_construction, or
 // bounce it back to the architect via revision_requested. This enforces "the
 // Architect cannot approve their own final drawing."
+//
+// That guarantee previously existed only in the UI (these buttons simply
+// weren't rendered for an Architect) — none of the four functions below
+// checked the caller's role, so any authenticated user, including the
+// Architect who drafted the drawing, could invoke approveForConstruction
+// directly. Every function now asserts Owner first.
 
 async function stampCurrentRevision(drawingId: string, status: string, notes?: string) {
   const supabase = createClient();
@@ -28,6 +35,7 @@ async function stampCurrentRevision(drawingId: string, status: string, notes?: s
 }
 
 export async function requestRevision(drawingId: string, formData: FormData) {
+  await assertOwner();
   const supabase = createClient();
   const notes = String(formData.get("notes") || "");
   await supabase.from("drawings").update({ status: "revision_requested" }).eq("id", drawingId);
@@ -38,6 +46,7 @@ export async function requestRevision(drawingId: string, formData: FormData) {
 }
 
 export async function sendToClient(drawingId: string) {
+  await assertOwner();
   const supabase = createClient();
   await supabase.from("drawings").update({ status: "client_review" }).eq("id", drawingId);
   await stampCurrentRevision(drawingId, "client_review");
@@ -47,6 +56,7 @@ export async function sendToClient(drawingId: string) {
 }
 
 export async function approveDrawing(drawingId: string) {
+  await assertOwner();
   const supabase = createClient();
   await supabase.from("drawings").update({ status: "approved" }).eq("id", drawingId);
   await stampCurrentRevision(drawingId, "approved");
@@ -58,6 +68,7 @@ export async function approveDrawing(drawingId: string) {
 // revision of that drawing — the one durable rule this whole workflow exists
 // to enforce (only one revision may ever be the live, buildable one).
 export async function approveForConstruction(drawingId: string) {
+  await assertOwner();
   const supabase = createClient();
   const { data: drawing } = await supabase
     .from("drawings")

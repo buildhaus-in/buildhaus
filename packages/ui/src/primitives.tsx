@@ -3,23 +3,33 @@ import type { ReactNode } from "react";
 
 /* Button ------------------------------------------------------------------ */
 type BtnVariant = "primary" | "ghost" | "outline" | "danger" | "subtle";
+const BTN_BASE =
+  "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed";
+const BTN_VARIANTS: Record<BtnVariant, string> = {
+  primary: "bg-brand text-white hover:brightness-110",
+  ghost: "bg-transparent text-sand hover:bg-surface",
+  outline: "border border-border text-sand hover:bg-surface",
+  danger: "bg-danger text-white hover:brightness-110",
+  subtle: "bg-surface text-sand border border-border hover:border-brand",
+};
+
+// Exposed so a navigation link can be styled exactly like a Button without
+// nesting a real <button> inside an <a> — <a><button> is invalid content
+// model (interactive content inside interactive content) and was found
+// nested that way in a couple of pages that used <Link href><Button>...
+// e.g. `<Link href={...} className={buttonClass("outline")}>Edit →</Link>`.
+export function buttonClass(variant: BtnVariant = "primary", className?: string): string {
+  return clsx(BTN_BASE, BTN_VARIANTS[variant], className);
+}
+
 export function Button({
   children, variant = "primary", className, type = "button", disabled, ...rest
 }: {
   children: ReactNode; variant?: BtnVariant; className?: string;
   type?: "button" | "submit"; disabled?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const base =
-    "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed";
-  const styles: Record<BtnVariant, string> = {
-    primary: "bg-brand text-white hover:brightness-110",
-    ghost: "bg-transparent text-sand hover:bg-surface",
-    outline: "border border-border text-sand hover:bg-surface",
-    danger: "bg-danger text-white hover:brightness-110",
-    subtle: "bg-surface text-sand border border-border hover:border-brand",
-  };
   return (
-    <button type={type} disabled={disabled} className={clsx(base, styles[variant], className)} {...rest}>
+    <button type={type} disabled={disabled} className={buttonClass(variant, className)} {...rest}>
       {children}
     </button>
   );

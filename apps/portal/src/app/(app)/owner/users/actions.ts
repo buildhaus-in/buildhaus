@@ -52,4 +52,11 @@ export async function assignToProject(formData: FormData) {
   await supabase.from("project_members")
     .insert({ project_id: projectId, profile_id: profileId, role_key: roleKey });
   revalidatePath("/owner/users");
+  // Without this, the project detail page's Team section (and the projects
+  // list) can show a stale "No one assigned yet" for up to Next's Router
+  // Cache TTL after a fresh assignment, if reached via client-side
+  // navigation rather than a hard reload — the DB write itself was never
+  // the problem.
+  revalidatePath(`/owner/projects/${projectId}`);
+  revalidatePath("/owner/projects");
 }

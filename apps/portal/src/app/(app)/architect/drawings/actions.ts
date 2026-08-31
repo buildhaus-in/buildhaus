@@ -1,7 +1,7 @@
 "use server";
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
-import { getUserContext } from "@/lib/session";
+import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -10,6 +10,15 @@ import { redirect } from "next/navigation";
 // `approved` / `approved_for_construction` (that's an Owner/Client action;
 // see src/app/(app)/owner/drawings/actions.ts for the approval-side state
 // transitions, including the "supersede every other revision" step).
+//
+// All three actions below previously only checked "is anyone signed in"
+// (getUserContext() used solely to grab ctx.userId for the uploaded_by
+// column) — never the caller's role, and never whether they're actually a
+// member of the project_id/drawing they were operating on. Now each asserts
+// the "architect" role (assertRole also lets the Owner through) and, for
+// project-scoped writes, assertProjectAccess — which mirrors the real
+// is_project_member() RLS predicate at the app layer, since Demo Mode has
+// no RLS to fall back on (apps/portal/src/lib/demo-scoping.ts).
 
 export type DrawingFormState = { error: string } | null;
 
@@ -30,11 +39,20 @@ async function uploadDrawingFile(formData: FormData, folder: string): Promise<{ 
 
 export async function createDrawing(_prevState: DrawingFormState, formData: FormData): Promise<DrawingFormState> {
   const supabase = createClient();
-  const ctx = await getUserContext();
-  if (!ctx?.userId) return { error: "You must be signed in to upload a drawing." };
+  let ctx;
+  try {
+    ctx = await assertRole("architect");
+  } catch {
+    return { error: "You must be signed in as an Architect to upload a drawing." };
+  }
 
   const projectId = String(formData.get("project_id") || "");
   if (!projectId) return { error: "Please select a project." };
+  try {
+    await assertProjectAccess(supabase, projectId, ctx);
+  } catch {
+    return { error: "You are not assigned to this project." };
+  }
 
   const uploaded = await uploadDrawingFile(formData, `drawings/${projectId}`);
   if (uploaded.error) return { error: uploaded.error };
@@ -75,17 +93,30 @@ export async function createRevision(
   formData: FormData
 ): Promise<DrawingFormState> {
   const supabase = createClient();
-  const ctx = await getUserContext();
-  if (!ctx?.userId) return { error: "You must be signed in to upload a revision." };
+  let ctx;
+  try {
+    ctx = await assertRole("architect");
+  } catch {
+    return { error: "You must be signed in as an Architect to upload a revision." };
+  }
 
   const { data: drawing } = await supabase
     .from("drawings")
-    .select("id,current_revision")
+    .select("id,project_id,current_revision")
     .eq("id", drawingId)
     .maybeSingle();
   if (!drawing) return { error: "Drawing not found." };
+  try {
+    await assertProjectAccess(supabase, drawing.project_id, ctx);
+  } catch {
+    return { error: "You are not assigned to this project." };
+  }
 
-  const uploaded = await uploadDrawingFile(formData, `drawings/${drawingId}`);
+  // Keyed by project_id (not drawingId) — consistent with createDrawing's
+  // folder above, and required so the /uploads route and the real-Supabase
+  // storage.objects RLS policy (both project-scoped by path) can resolve
+  // which project this file belongs to from the path alone.
+  const uploaded = await uploadDrawingFile(formData, `drawings/${drawing.project_id}`);
   if (uploaded.error) return { error: uploaded.error };
 
   await supabase.from("drawing_revisions").insert({
@@ -106,7 +137,17 @@ export async function createRevision(
 }
 
 export async function submitToOwner(drawingId: string, revisionId: string) {
+  const ctx = await assertRole("architect");
   const supabase = createClient();
+
+  const { data: drawing } = await supabase
+    .from("drawings")
+    .select("id,project_id")
+    .eq("id", drawingId)
+    .maybeSingle();
+  if (!drawing) return;
+  await assertProjectAccess(supabase, drawing.project_id, ctx);
+
   const { data: revision } = await supabase
     .from("drawing_revisions")
     .select("id,revision_no")

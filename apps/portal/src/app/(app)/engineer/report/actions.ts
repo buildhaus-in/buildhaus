@@ -1,7 +1,7 @@
 "use server";
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
-import { getUserContext } from "@/lib/session";
+import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,15 +13,45 @@ function textOrNull(v: FormDataEntryValue | null): string {
   return String(v ?? "").trim();
 }
 
+// Previously only checked "is anyone signed in" — never role or project
+// membership, so any authenticated user could write a daily report against
+// any project_id. See engineer/attendance/actions.ts for the full rationale.
 async function persistReport(formData: FormData, status: "draft" | "submitted") {
   const supabase = createClient();
-  const ctx = await getUserContext();
-  if (!ctx?.userId) return;
+  let ctx;
+  try {
+    ctx = await assertRole("site_engineer");
+  } catch {
+    return;
+  }
 
   const projectId = String(formData.get("project_id") || "");
   const reportDate = String(formData.get("report_date") || "");
   const existingId = textOrNull(formData.get("report_id"));
   if (!projectId || !reportDate) return;
+  try {
+    await assertProjectAccess(supabase, projectId, ctx);
+  } catch {
+    return;
+  }
+  if (existingId) {
+    // report_id is caller-supplied too — without this, an engineer could
+    // pass their own project_id (so the check above passes) alongside
+    // another project's report_id, and the update below would silently
+    // reassign that other report to their project. Re-check access against
+    // the report's ACTUAL project, not the one the form claims.
+    const { data: existing } = await supabase
+      .from("daily_reports")
+      .select("project_id")
+      .eq("id", existingId)
+      .maybeSingle();
+    if (!existing) return;
+    try {
+      await assertProjectAccess(supabase, existing.project_id, ctx);
+    } catch {
+      return;
+    }
+  }
 
   // Validate every photo slot BEFORE writing anything — a file picker can't
   // be trusted client-side alone, and we'd rather bounce the whole

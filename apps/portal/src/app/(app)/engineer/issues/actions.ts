@@ -1,16 +1,27 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { revalidatePath } from "next/cache";
 
+// Previously only checked "is anyone signed in" — never role or project
+// membership. See engineer/attendance/actions.ts for the full rationale.
 export async function createSiteIssue(formData: FormData) {
   const supabase = createClient();
-  const ctx = await getUserContext();
-  if (!ctx?.userId) return;
+  let ctx;
+  try {
+    ctx = await assertRole("site_engineer");
+  } catch {
+    return;
+  }
 
   const projectId = String(formData.get("project_id") || "");
   const title = String(formData.get("title") || "").trim();
   if (!projectId || !title) return;
+  try {
+    await assertProjectAccess(supabase, projectId, ctx);
+  } catch {
+    return;
+  }
 
   await supabase.from("site_issues").insert({
     project_id: projectId,
