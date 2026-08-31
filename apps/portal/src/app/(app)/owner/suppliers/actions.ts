@@ -1,13 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 export async function createSupplier(formData: FormData) {
   const ctx = await assertOwner();
@@ -15,13 +10,16 @@ export async function createSupplier(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   if (!name) return;
 
-  await supabase.from("suppliers").insert({
-    organisation_id: ctx.profile!.organisation_id,
-    name,
-    category: String(formData.get("category") || "").trim() || null,
-    contact_person: String(formData.get("contact_person") || "").trim() || null,
-    mobile: String(formData.get("mobile") || "").trim() || null,
-  });
+  throwIfError(
+    await supabase.from("suppliers").insert({
+      organisation_id: ctx.profile!.organisation_id,
+      name,
+      category: String(formData.get("category") || "").trim() || null,
+      contact_person: String(formData.get("contact_person") || "").trim() || null,
+      mobile: String(formData.get("mobile") || "").trim() || null,
+    }),
+    "Couldn't create the supplier."
+  );
   revalidatePath("/owner/suppliers");
 }
 
@@ -36,15 +34,18 @@ export async function raisePurchase(formData: FormData) {
   const materialName = String(formData.get("material_name") || "").trim();
   if (!supplierId || !materialName) return;
 
-  await supabase.from("purchases").insert({
-    supplier_id: supplierId,
-    project_id: projectId,
-    material_name: materialName,
-    quantity: Number(formData.get("quantity") || 0) || null,
-    unit: String(formData.get("unit") || "").trim() || null,
-    status: "ordered",
-    notes: String(formData.get("notes") || "").trim() || null,
-    ordered_at: new Date().toISOString(),
-  });
+  throwIfError(
+    await supabase.from("purchases").insert({
+      supplier_id: supplierId,
+      project_id: projectId,
+      material_name: materialName,
+      quantity: Number(formData.get("quantity") || 0) || null,
+      unit: String(formData.get("unit") || "").trim() || null,
+      status: "ordered",
+      notes: String(formData.get("notes") || "").trim() || null,
+      ordered_at: new Date().toISOString(),
+    }),
+    "Couldn't raise the purchase."
+  );
   revalidatePath("/owner/suppliers");
 }

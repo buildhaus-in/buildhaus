@@ -2,6 +2,7 @@
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -100,24 +101,40 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
 
   let reportId = existingId || null;
   if (reportId) {
-    await supabase.from("daily_reports").update(header).eq("id", reportId);
+    throwIfError(
+      await supabase.from("daily_reports").update(header).eq("id", reportId),
+      "Couldn't save the report."
+    );
   } else {
-    const { data: created } = await supabase.from("daily_reports").insert(header).select().single();
+    const { data: created, error } = await supabase.from("daily_reports").insert(header).select().single();
+    if (error) throw new Error(error.message || "Couldn't save the report.");
     reportId = created?.id ?? null;
   }
   if (!reportId) return;
 
   // Replace child rows wholesale — simplest correct way to sync a small,
   // fixed-slot repeatable-row form without diffing.
-  await supabase.from("daily_report_labour").delete().eq("daily_report_id", reportId);
-  await supabase.from("daily_report_materials").delete().eq("daily_report_id", reportId);
-  await supabase.from("daily_report_photos").delete().eq("daily_report_id", reportId);
+  throwIfError(
+    await supabase.from("daily_report_labour").delete().eq("daily_report_id", reportId),
+    "Couldn't save the report's labour rows."
+  );
+  throwIfError(
+    await supabase.from("daily_report_materials").delete().eq("daily_report_id", reportId),
+    "Couldn't save the report's material rows."
+  );
+  throwIfError(
+    await supabase.from("daily_report_photos").delete().eq("daily_report_id", reportId),
+    "Couldn't save the report's photos."
+  );
 
   for (let i = 0; i < LABOUR_ROWS; i++) {
     const category = textOrNull(formData.get(`labour_category_${i}`));
     const count = Number(formData.get(`labour_count_${i}`) || 0);
     if (category && count > 0) {
-      await supabase.from("daily_report_labour").insert({ daily_report_id: reportId, category, count });
+      throwIfError(
+        await supabase.from("daily_report_labour").insert({ daily_report_id: reportId, category, count }),
+        "Couldn't save a labour row."
+      );
     }
   }
   for (let i = 0; i < MATERIAL_ROWS; i++) {
@@ -126,7 +143,10 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
     const consumed = Number(formData.get(`material_consumed_${i}`) || 0) || null;
     const unit = textOrNull(formData.get(`material_unit_${i}`));
     if (material) {
-      await supabase.from("daily_report_materials").insert({ daily_report_id: reportId, material, received, consumed, unit });
+      throwIfError(
+        await supabase.from("daily_report_materials").insert({ daily_report_id: reportId, material, received, consumed, unit }),
+        "Couldn't save a material row."
+      );
     }
   }
   for (let i = 0; i < PHOTO_ROWS; i++) {
@@ -142,7 +162,10 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
       url = uploaded.url;
     }
     if (url) {
-      await supabase.from("daily_report_photos").insert({ daily_report_id: reportId, url, caption });
+      throwIfError(
+        await supabase.from("daily_report_photos").insert({ daily_report_id: reportId, url, caption }),
+        "Couldn't save a photo."
+      );
     }
   }
 

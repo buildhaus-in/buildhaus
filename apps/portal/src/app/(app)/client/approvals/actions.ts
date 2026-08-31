@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { getClientProjectId } from "@/lib/demo-scoping";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 
 async function assertOwnApproval(supabase: any, id: string): Promise<boolean> {
@@ -17,10 +18,13 @@ export async function approveApproval(formData: FormData) {
   const supabase = createClient();
   if (!(await assertOwnApproval(supabase, id))) return;
 
-  await supabase
-    .from("client_approvals")
-    .update({ status: "approved", decided_at: new Date().toISOString(), client_response: null })
-    .eq("id", id);
+  throwIfError(
+    await supabase
+      .from("client_approvals")
+      .update({ status: "approved", decided_at: new Date().toISOString(), client_response: null })
+      .eq("id", id),
+    "Couldn't record your approval."
+  );
 
   revalidatePath("/client/approvals");
   revalidatePath("/client");
@@ -33,10 +37,13 @@ export async function rejectApproval(formData: FormData) {
   const supabase = createClient();
   if (!(await assertOwnApproval(supabase, id))) return;
 
-  await supabase
-    .from("client_approvals")
-    .update({ status: "rejected", decided_at: new Date().toISOString(), client_response: reason || "No reason given." })
-    .eq("id", id);
+  throwIfError(
+    await supabase
+      .from("client_approvals")
+      .update({ status: "rejected", decided_at: new Date().toISOString(), client_response: reason || "No reason given." })
+      .eq("id", id),
+    "Couldn't record your rejection."
+  );
 
   revalidatePath("/client/approvals");
   revalidatePath("/client");

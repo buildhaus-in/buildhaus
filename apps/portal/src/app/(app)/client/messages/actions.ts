@@ -2,6 +2,7 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
 import { getClientProjectId } from "@/lib/demo-scoping";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 
 export async function sendMessage(formData: FormData) {
@@ -15,15 +16,18 @@ export async function sendMessage(formData: FormData) {
   if (!projectId) return;
 
   const supabase = createClient();
-  await supabase.from("comments").insert({
-    organisation_id: ctx.profile.organisation_id,
-    entity_type: "project",
-    entity_id: projectId,
-    body,
-    client_visible: true,
-    created_by: ctx.userId,
-    created_at: new Date().toISOString(),
-  });
+  throwIfError(
+    await supabase.from("comments").insert({
+      organisation_id: ctx.profile.organisation_id,
+      entity_type: "project",
+      entity_id: projectId,
+      body,
+      client_visible: true,
+      created_by: ctx.userId,
+      created_at: new Date().toISOString(),
+    }),
+    "Couldn't send your message."
+  );
 
   revalidatePath("/client/messages");
 }

@@ -1,13 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 function revalidateAll() {
   revalidatePath("/owner/finance");
@@ -29,25 +24,34 @@ export async function recordReceipt(formData: FormData) {
   if (!projectId || !amount) return;
 
   const receiptNo = `BH-RCPT-${Date.now().toString().slice(-6)}`;
-  await supabase.from("client_receipts").insert({
-    project_id: projectId,
-    amount,
-    receipt_date: new Date().toISOString().slice(0, 10),
-    mode,
-    receipt_no: receiptNo,
-  });
+  throwIfError(
+    await supabase.from("client_receipts").insert({
+      project_id: projectId,
+      amount,
+      receipt_date: new Date().toISOString().slice(0, 10),
+      mode,
+      receipt_no: receiptNo,
+    }),
+    "Couldn't record the receipt."
+  );
 
-  await supabase.from("payments").insert({
-    project_id: projectId,
-    direction: "inbound",
-    amount,
-    category: "client_receipt",
-    payment_date: new Date().toISOString().slice(0, 10),
-    created_by: ctx.userId,
-  });
+  throwIfError(
+    await supabase.from("payments").insert({
+      project_id: projectId,
+      direction: "inbound",
+      amount,
+      category: "client_receipt",
+      payment_date: new Date().toISOString().slice(0, 10),
+      created_by: ctx.userId,
+    }),
+    "Couldn't log the payment."
+  );
 
   if (scheduleId) {
-    await supabase.from("client_payment_schedules").update({ status: "paid" }).eq("id", scheduleId);
+    throwIfError(
+      await supabase.from("client_payment_schedules").update({ status: "paid" }).eq("id", scheduleId),
+      "Couldn't mark the milestone as paid."
+    );
   }
 
   revalidateAll();
@@ -62,15 +66,21 @@ export async function markSupplierBillPaid(formData: FormData) {
   const { data: bill } = await supabase.from("supplier_bills").select("id,project_id,outstanding").eq("id", billId).maybeSingle();
   if (!bill) return;
 
-  await supabase.from("supplier_bills").update({ outstanding: 0 }).eq("id", billId);
-  await supabase.from("payments").insert({
-    project_id: bill.project_id,
-    direction: "outbound",
-    amount: bill.outstanding,
-    category: "supplier_payment",
-    payment_date: new Date().toISOString().slice(0, 10),
-    created_by: ctx.userId,
-  });
+  throwIfError(
+    await supabase.from("supplier_bills").update({ outstanding: 0 }).eq("id", billId),
+    "Couldn't mark the supplier bill as paid."
+  );
+  throwIfError(
+    await supabase.from("payments").insert({
+      project_id: bill.project_id,
+      direction: "outbound",
+      amount: bill.outstanding,
+      category: "supplier_payment",
+      payment_date: new Date().toISOString().slice(0, 10),
+      created_by: ctx.userId,
+    }),
+    "Couldn't log the payment."
+  );
 
   revalidatePath("/owner/finance");
   revalidatePath("/owner");
@@ -85,15 +95,21 @@ export async function markContractorBillPaid(formData: FormData) {
   const { data: bill } = await supabase.from("contractor_bills").select("id,project_id,outstanding").eq("id", billId).maybeSingle();
   if (!bill) return;
 
-  await supabase.from("contractor_bills").update({ outstanding: 0 }).eq("id", billId);
-  await supabase.from("payments").insert({
-    project_id: bill.project_id,
-    direction: "outbound",
-    amount: bill.outstanding,
-    category: "labour_payment",
-    payment_date: new Date().toISOString().slice(0, 10),
-    created_by: ctx.userId,
-  });
+  throwIfError(
+    await supabase.from("contractor_bills").update({ outstanding: 0 }).eq("id", billId),
+    "Couldn't mark the contractor bill as paid."
+  );
+  throwIfError(
+    await supabase.from("payments").insert({
+      project_id: bill.project_id,
+      direction: "outbound",
+      amount: bill.outstanding,
+      category: "labour_payment",
+      payment_date: new Date().toISOString().slice(0, 10),
+      created_by: ctx.userId,
+    }),
+    "Couldn't log the payment."
+  );
 
   revalidatePath("/owner/finance");
   revalidatePath("/owner/labour");
@@ -107,14 +123,17 @@ export async function recordExpense(formData: FormData) {
   const amount = Number(formData.get("amount") || 0);
   if (!amount) return;
 
-  await supabase.from("expenses").insert({
-    organisation_id: ctx.profile!.organisation_id,
-    project_id: projectId,
-    category: String(formData.get("category") || "other"),
-    amount,
-    expense_date: new Date().toISOString().slice(0, 10),
-    notes: String(formData.get("notes") || ""),
-  });
+  throwIfError(
+    await supabase.from("expenses").insert({
+      organisation_id: ctx.profile!.organisation_id,
+      project_id: projectId,
+      category: String(formData.get("category") || "other"),
+      amount,
+      expense_date: new Date().toISOString().slice(0, 10),
+      notes: String(formData.get("notes") || ""),
+    }),
+    "Couldn't record the expense."
+  );
 
   revalidatePath("/owner/finance");
 }

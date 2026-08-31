@@ -1,13 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 function revalidateAll() {
   revalidatePath("/owner/clients");
@@ -23,12 +18,15 @@ export async function resendApproval(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!id) return;
 
-  await supabase.from("client_approvals").update({
-    status: "sent_to_client",
-    sent_at: new Date().toISOString(),
-    decided_at: null,
-    client_response: null,
-  }).eq("id", id);
+  throwIfError(
+    await supabase.from("client_approvals").update({
+      status: "sent_to_client",
+      sent_at: new Date().toISOString(),
+      decided_at: null,
+      client_response: null,
+    }).eq("id", id),
+    "Couldn't resend the approval to the client."
+  );
 
   revalidateAll();
 }
@@ -41,11 +39,14 @@ export async function priceChangeRequest(formData: FormData) {
   const timelineImpactDays = Number(formData.get("timeline_impact_days") || 0) || null;
   if (!id) return;
 
-  await supabase.from("change_requests").update({
-    status: "cost_time_shared",
-    cost_impact: costImpact,
-    timeline_impact_days: timelineImpactDays,
-  }).eq("id", id);
+  throwIfError(
+    await supabase.from("change_requests").update({
+      status: "cost_time_shared",
+      cost_impact: costImpact,
+      timeline_impact_days: timelineImpactDays,
+    }).eq("id", id),
+    "Couldn't share cost/time impact with the client."
+  );
 
   revalidatePath("/owner/clients");
   revalidatePath("/owner");
@@ -57,7 +58,10 @@ export async function rejectChangeRequest(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!id) return;
 
-  await supabase.from("change_requests").update({ status: "rejected" }).eq("id", id);
+  throwIfError(
+    await supabase.from("change_requests").update({ status: "rejected" }).eq("id", id),
+    "Couldn't reject the change request."
+  );
   revalidatePath("/owner/clients");
   revalidatePath("/owner");
 }

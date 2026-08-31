@@ -1,13 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 export async function updateOrgSettings(formData: FormData) {
   const ctx = await assertOwner();
@@ -21,14 +16,23 @@ export async function updateOrgSettings(formData: FormData) {
   const timezone = String(formData.get("timezone") || "Asia/Kolkata");
 
   if (name) {
-    await supabase.from("organisations").update({ name, city: city || null, state: state || null }).eq("id", orgId);
+    throwIfError(
+      await supabase.from("organisations").update({ name, city: city || null, state: state || null }).eq("id", orgId),
+      "Couldn't update organisation details."
+    );
   }
 
   const { data: settingsRow } = await supabase.from("organisation_settings").select("id").eq("organisation_id", orgId).maybeSingle();
   if (settingsRow) {
-    await supabase.from("organisation_settings").update({ currency, timezone }).eq("id", settingsRow.id);
+    throwIfError(
+      await supabase.from("organisation_settings").update({ currency, timezone }).eq("id", settingsRow.id),
+      "Couldn't update organisation settings."
+    );
   } else {
-    await supabase.from("organisation_settings").insert({ organisation_id: orgId, currency, timezone });
+    throwIfError(
+      await supabase.from("organisation_settings").insert({ organisation_id: orgId, currency, timezone }),
+      "Couldn't save organisation settings."
+    );
   }
 
   revalidatePath("/owner/settings");

@@ -19,6 +19,28 @@ export function unwrap<T>(
   return { ok: true, data: result.data };
 }
 
+// Companion to unwrap() for the many Server Actions in this codebase that
+// are still plain `(formData: FormData) => Promise<void>` — wired to a bare
+// `<form action={fn}>` with no useFormState/ActionResult channel back to
+// the client, so there's nowhere to *return* an error to. Left completely
+// unchecked (the pattern found throughout owner/*, engineer/*, client/*
+// actions.ts before this pass), a rejected write was indistinguishable
+// from success — the form just sat there. Throwing instead means the
+// failure is no longer silent: the nearest error.tsx boundary (see
+// apps/portal/src/app/(app)/error.tsx) renders a real "something went
+// wrong, try again" screen instead of nothing happening. It's a strictly
+// worse UX than a proper per-field error message (tracked as a follow-up —
+// converting each of these to useFormState + ActionResult, the pattern
+// owner/projects/actions.ts's createProject() and
+// DocumentUploadForm/uploadDocument already use), but it closes the actual
+// data-integrity bug: the write failing and nobody ever finding out.
+export function throwIfError(
+  result: { error: { message?: string } | null },
+  fallbackMessage: string
+): void {
+  if (result.error) throw new Error(result.error.message || fallbackMessage);
+}
+
 // Records a human-readable audit trail entry for a mutation, via the same
 // public.log_audit() Postgres function convert_lead_to_project() already
 // calls (supabase/migrations/0011_triggers_functions.sql) — Demo Mode has

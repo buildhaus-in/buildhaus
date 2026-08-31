@@ -1,14 +1,9 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { createAdminClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 // Create a user + profile + role. Uses the admin client, but only after the
 // caller is confirmed to be the Owner.
@@ -24,18 +19,26 @@ export async function createUser(formData: FormData) {
   const { data: created, error } = await admin.auth.admin.createUser({
     email, password, email_confirm: true, user_metadata: { full_name: fullName },
   });
-  if (error || !created.user) return;
+  if (error) throw new Error(error.message || "Couldn't create the user.");
+  if (!created.user) throw new Error("Couldn't create the user.");
 
   const orgId = ctx.profile!.organisation_id;
   // Ensure profile carries name + org.
-  await admin.from("profiles").upsert({
-    id: created.user.id, organisation_id: orgId, full_name: fullName || email.split("@")[0],
-  });
+  throwIfError(
+    await admin.from("profiles").upsert({
+      id: created.user.id, organisation_id: orgId, full_name: fullName || email.split("@")[0],
+    }),
+    "User was created, but the profile couldn't be saved — contact support."
+  );
 
-  const { data: role } = await admin.from("roles")
+  const { data: role, error: roleError } = await admin.from("roles")
     .select("id").eq("organisation_id", orgId).eq("key", roleKey).maybeSingle();
+  if (roleError) throw new Error(roleError.message || "Couldn't look up the role.");
   if (role) {
-    await admin.from("user_roles").insert({ profile_id: created.user.id, role_id: role.id });
+    throwIfError(
+      await admin.from("user_roles").insert({ profile_id: created.user.id, role_id: role.id }),
+      "User was created, but the role couldn't be assigned — assign it manually."
+    );
   }
   revalidatePath("/owner/users");
 }
@@ -49,8 +52,11 @@ export async function assignToProject(formData: FormData) {
   const roleKey = String(formData.get("role_key") || "site_engineer");
   if (!projectId || !profileId) return;
 
-  await supabase.from("project_members")
-    .insert({ project_id: projectId, profile_id: profileId, role_key: roleKey });
+  throwIfError(
+    await supabase.from("project_members")
+      .insert({ project_id: projectId, profile_id: profileId, role_key: roleKey }),
+    "Couldn't assign this person to the project."
+  );
   revalidatePath("/owner/users");
   // Without this, the project detail page's Team section (and the projects
   // list) can show a stale "No one assigned yet" for up to Next's Router

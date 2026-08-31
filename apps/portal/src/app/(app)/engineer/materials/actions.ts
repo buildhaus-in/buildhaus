@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 
 const ITEM_SLOTS = 6;
@@ -24,7 +25,7 @@ export async function createMaterialRequest(formData: FormData) {
     return;
   }
 
-  const { data: request } = await supabase
+  const { data: request, error } = await supabase
     .from("material_requests")
     .insert({
       project_id: projectId,
@@ -37,6 +38,7 @@ export async function createMaterialRequest(formData: FormData) {
     })
     .select()
     .single();
+  if (error) throw new Error(error.message || "Couldn't create the material request.");
   if (!request) return;
 
   for (let i = 0; i < ITEM_SLOTS; i++) {
@@ -44,12 +46,15 @@ export async function createMaterialRequest(formData: FormData) {
     const quantity = Number(formData.get(`item_qty_${i}`) || 0);
     const unit = String(formData.get(`item_unit_${i}`) || "").trim();
     if (materialName && quantity > 0) {
-      await supabase.from("material_request_items").insert({
-        material_request_id: request.id,
-        material_name: materialName,
-        quantity,
-        unit,
-      });
+      throwIfError(
+        await supabase.from("material_request_items").insert({
+          material_request_id: request.id,
+          material_name: materialName,
+          quantity,
+          unit,
+        }),
+        "Request created, but an item couldn't be saved."
+      );
     }
   }
 

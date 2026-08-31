@@ -1,13 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 export async function createContractor(formData: FormData) {
   const ctx = await assertOwner();
@@ -15,11 +10,14 @@ export async function createContractor(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   if (!name) return;
 
-  await supabase.from("labour_contractors").insert({
-    organisation_id: ctx.profile!.organisation_id,
-    name,
-    mobile: String(formData.get("mobile") || "").trim() || null,
-  });
+  throwIfError(
+    await supabase.from("labour_contractors").insert({
+      organisation_id: ctx.profile!.organisation_id,
+      name,
+      mobile: String(formData.get("mobile") || "").trim() || null,
+    }),
+    "Couldn't create the contractor."
+  );
   revalidatePath("/owner/labour");
 }
 
@@ -31,13 +29,16 @@ export async function recordAttendance(formData: FormData) {
   const presentCount = Number(formData.get("present_count") || 0);
   if (!projectId || !contractorId || !presentCount) return;
 
-  await supabase.from("labour_attendance").insert({
-    project_id: projectId,
-    contractor_id: contractorId,
-    attendance_date: new Date().toISOString().slice(0, 10),
-    present_count: presentCount,
-    trade: String(formData.get("trade") || "Mixed"),
-  });
+  throwIfError(
+    await supabase.from("labour_attendance").insert({
+      project_id: projectId,
+      contractor_id: contractorId,
+      attendance_date: new Date().toISOString().slice(0, 10),
+      present_count: presentCount,
+      trade: String(formData.get("trade") || "Mixed"),
+    }),
+    "Couldn't record attendance."
+  );
   revalidatePath("/owner/labour");
   revalidatePath("/owner");
 }

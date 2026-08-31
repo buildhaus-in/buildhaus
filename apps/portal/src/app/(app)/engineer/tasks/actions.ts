@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 
 function revalidateTask(taskId: string) {
@@ -36,7 +37,10 @@ export async function acceptTask(formData: FormData) {
   } catch {
     return;
   }
-  await supabase.from("tasks").update({ accepted_at: new Date().toISOString() }).eq("id", taskId);
+  throwIfError(
+    await supabase.from("tasks").update({ accepted_at: new Date().toISOString() }).eq("id", taskId),
+    "Couldn't accept the task."
+  );
   revalidateTask(taskId);
 }
 
@@ -48,7 +52,10 @@ export async function startTask(formData: FormData) {
   } catch {
     return;
   }
-  await supabase.from("tasks").update({ status: "in_progress" }).eq("id", taskId).eq("status", "assigned");
+  throwIfError(
+    await supabase.from("tasks").update({ status: "in_progress" }).eq("id", taskId).eq("status", "assigned"),
+    "Couldn't start the task."
+  );
   revalidateTask(taskId);
 }
 
@@ -64,7 +71,10 @@ export async function updateTaskProgress(formData: FormData) {
   const { data: task } = await supabase.from("tasks").select("status").eq("id", taskId).maybeSingle();
   const patch: Record<string, any> = { progress };
   if (task?.status === "assigned") patch.status = "in_progress";
-  await supabase.from("tasks").update(patch).eq("id", taskId);
+  throwIfError(
+    await supabase.from("tasks").update(patch).eq("id", taskId),
+    "Couldn't update task progress."
+  );
   revalidateTask(taskId);
 }
 
@@ -78,7 +88,10 @@ export async function markTaskBlocked(formData: FormData) {
   }
   const reason = String(formData.get("blocker_reason") || "").trim();
   if (!reason) return;
-  await supabase.from("tasks").update({ status: "blocked", blocker_reason: reason }).eq("id", taskId);
+  throwIfError(
+    await supabase.from("tasks").update({ status: "blocked", blocker_reason: reason }).eq("id", taskId),
+    "Couldn't mark the task as blocked."
+  );
   revalidateTask(taskId);
 }
 
@@ -90,7 +103,10 @@ export async function resumeTask(formData: FormData) {
   } catch {
     return;
   }
-  await supabase.from("tasks").update({ status: "in_progress", blocker_reason: null }).eq("id", taskId).eq("status", "blocked");
+  throwIfError(
+    await supabase.from("tasks").update({ status: "in_progress", blocker_reason: null }).eq("id", taskId).eq("status", "blocked"),
+    "Couldn't resume the task."
+  );
   revalidateTask(taskId);
 }
 
@@ -102,7 +118,10 @@ export async function submitTaskForReview(formData: FormData) {
   } catch {
     return;
   }
-  await supabase.from("tasks").update({ status: "submitted" }).eq("id", taskId).eq("status", "in_progress");
+  throwIfError(
+    await supabase.from("tasks").update({ status: "submitted" }).eq("id", taskId).eq("status", "in_progress"),
+    "Couldn't submit the task for review."
+  );
   revalidateTask(taskId);
 }
 
@@ -119,7 +138,10 @@ export async function toggleChecklistItem(formData: FormData) {
   const checklist = Array.isArray(task?.checklist) ? [...task.checklist] : [];
   if (checklist[index]) {
     checklist[index] = { ...checklist[index], done: !checklist[index].done };
-    await supabase.from("tasks").update({ checklist }).eq("id", taskId);
+    throwIfError(
+      await supabase.from("tasks").update({ checklist }).eq("id", taskId),
+      "Couldn't update the checklist."
+    );
   }
   revalidateTask(taskId);
 }
@@ -135,11 +157,14 @@ export async function addTaskComment(formData: FormData) {
   }
   const body = String(formData.get("body") || "").trim();
   if (!body) return;
-  await supabase.from("task_comments").insert({
-    task_id: taskId,
-    author_id: ctx.userId,
-    body,
-    created_at: new Date().toISOString(),
-  });
+  throwIfError(
+    await supabase.from("task_comments").insert({
+      task_id: taskId,
+      author_id: ctx.userId,
+      body,
+      created_at: new Date().toISOString(),
+    }),
+    "Couldn't add the comment."
+  );
   revalidateTask(taskId);
 }

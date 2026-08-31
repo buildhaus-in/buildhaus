@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 
 // Previously only checked "is anyone signed in" (getUserContext(), used
@@ -31,14 +32,17 @@ export async function logAttendance(formData: FormData) {
 
   const { data: contractor } = await supabase.from("labour_contractors").select("id").limit(1).maybeSingle();
 
-  await supabase.from("labour_attendance").insert({
-    project_id: projectId,
-    contractor_id: contractor?.id ?? null,
-    attendance_date: attendanceDate,
-    trade,
-    present_count: presentCount,
-    logged_by: ctx.userId,
-  });
+  throwIfError(
+    await supabase.from("labour_attendance").insert({
+      project_id: projectId,
+      contractor_id: contractor?.id ?? null,
+      attendance_date: attendanceDate,
+      trade,
+      present_count: presentCount,
+      logged_by: ctx.userId,
+    }),
+    "Couldn't log attendance."
+  );
 
   revalidatePath("/engineer/attendance");
 }

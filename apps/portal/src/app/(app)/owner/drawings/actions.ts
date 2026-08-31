@@ -2,6 +2,7 @@
 import { createClient } from "@buildhaus/database";
 import { revalidatePath } from "next/cache";
 import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 
 // Owner/Client-facing side of the drawing approval workflow. The Architect
 // portal (src/app/(app)/architect/drawings/actions.ts) can draft, revise and
@@ -27,18 +28,24 @@ async function stampCurrentRevision(drawingId: string, status: string, notes?: s
 
   const patch: Record<string, any> = { status };
   if (notes) patch.notes = notes;
-  await supabase
-    .from("drawing_revisions")
-    .update(patch)
-    .eq("drawing_id", drawingId)
-    .eq("revision_no", drawing.current_revision);
+  throwIfError(
+    await supabase
+      .from("drawing_revisions")
+      .update(patch)
+      .eq("drawing_id", drawingId)
+      .eq("revision_no", drawing.current_revision),
+    "Couldn't update the drawing revision."
+  );
 }
 
 export async function requestRevision(drawingId: string, formData: FormData) {
   await assertOwner();
   const supabase = createClient();
   const notes = String(formData.get("notes") || "");
-  await supabase.from("drawings").update({ status: "revision_requested" }).eq("id", drawingId);
+  throwIfError(
+    await supabase.from("drawings").update({ status: "revision_requested" }).eq("id", drawingId),
+    "Couldn't request a revision."
+  );
   await stampCurrentRevision(drawingId, "revision_requested", notes);
   revalidatePath("/owner/drawings");
   revalidatePath(`/architect/drawings/${drawingId}`);
@@ -48,7 +55,10 @@ export async function requestRevision(drawingId: string, formData: FormData) {
 export async function sendToClient(drawingId: string) {
   await assertOwner();
   const supabase = createClient();
-  await supabase.from("drawings").update({ status: "client_review" }).eq("id", drawingId);
+  throwIfError(
+    await supabase.from("drawings").update({ status: "client_review" }).eq("id", drawingId),
+    "Couldn't send the drawing to the client."
+  );
   await stampCurrentRevision(drawingId, "client_review");
   revalidatePath("/owner/drawings");
   revalidatePath(`/architect/drawings/${drawingId}`);
@@ -58,7 +68,10 @@ export async function sendToClient(drawingId: string) {
 export async function approveDrawing(drawingId: string) {
   await assertOwner();
   const supabase = createClient();
-  await supabase.from("drawings").update({ status: "approved" }).eq("id", drawingId);
+  throwIfError(
+    await supabase.from("drawings").update({ status: "approved" }).eq("id", drawingId),
+    "Couldn't approve the drawing."
+  );
   await stampCurrentRevision(drawingId, "approved");
   revalidatePath("/owner/drawings");
   revalidatePath(`/architect/drawings/${drawingId}`);
@@ -77,16 +90,23 @@ export async function approveForConstruction(drawingId: string) {
     .maybeSingle();
   if (!drawing) return;
 
-  await supabase.from("drawings").update({ status: "approved_for_construction" }).eq("id", drawingId);
+  throwIfError(
+    await supabase.from("drawings").update({ status: "approved_for_construction" }).eq("id", drawingId),
+    "Couldn't approve the drawing for construction."
+  );
   await stampCurrentRevision(drawingId, "approved_for_construction");
 
-  const { data: revisions } = await supabase
+  const { data: revisions, error } = await supabase
     .from("drawing_revisions")
     .select("id,revision_no")
     .eq("drawing_id", drawingId);
+  if (error) throw new Error(error.message || "Couldn't load the drawing's revisions.");
   for (const r of revisions ?? []) {
     if (r.revision_no !== drawing.current_revision) {
-      await supabase.from("drawing_revisions").update({ status: "superseded" }).eq("id", r.id);
+      throwIfError(
+        await supabase.from("drawing_revisions").update({ status: "superseded" }).eq("id", r.id),
+        "Couldn't supersede an older revision."
+      );
     }
   }
 

@@ -18,6 +18,11 @@ export async function uploadDocument(
   _prevState: DocumentFormState,
   formData: FormData
 ): Promise<DocumentFormState> {
+  try {
+    await assertOwner();
+  } catch {
+    return { error: "You must be signed in as the Owner to upload a document." };
+  }
   const supabase = createClient();
 
   const title = String(formData.get("title") || "").trim();
@@ -32,7 +37,11 @@ export async function uploadDocument(
 
   const { url } = await uploadFile({ file, filename: file.name, folder: `documents/${projectId}` });
 
-  await supabase.from("documents").insert({
+  // Previously ignored: the insert's error was never checked, so a rejected
+  // write (RLS, a NOT NULL violation, ...) looked identical to a successful
+  // upload — the file was on disk, but no `documents` row ever pointed to
+  // it, so it just never appeared on the page.
+  const { error } = await supabase.from("documents").insert({
     project_id: projectId,
     title,
     category: String(formData.get("category") || "") || null,
@@ -40,6 +49,7 @@ export async function uploadDocument(
     client_visible: formData.get("client_visible") === "on",
     uploaded_at: new Date().toISOString(),
   });
+  if (error) return { error: error.message || "Couldn't save the document." };
 
   revalidatePath(`/owner/projects/${projectId}`);
   return null;

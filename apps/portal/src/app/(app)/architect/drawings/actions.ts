@@ -2,6 +2,7 @@
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -57,7 +58,7 @@ export async function createDrawing(_prevState: DrawingFormState, formData: Form
   const uploaded = await uploadDrawingFile(formData, `drawings/${projectId}`);
   if (uploaded.error) return { error: uploaded.error };
 
-  const { data: drawing } = await supabase
+  const { data: drawing, error: drawingError } = await supabase
     .from("drawings")
     .insert({
       project_id: projectId,
@@ -72,9 +73,10 @@ export async function createDrawing(_prevState: DrawingFormState, formData: Form
     .select()
     .single();
 
+  if (drawingError) return { error: drawingError.message || "Could not create the drawing — please try again." };
   if (!drawing) return { error: "Could not create the drawing — please try again." };
 
-  await supabase.from("drawing_revisions").insert({
+  const { error: revisionError } = await supabase.from("drawing_revisions").insert({
     drawing_id: drawing.id,
     revision_no: 0,
     status: "draft",
@@ -82,6 +84,7 @@ export async function createDrawing(_prevState: DrawingFormState, formData: Form
     notes: String(formData.get("notes") || ""),
     uploaded_by: ctx.userId,
   });
+  if (revisionError) return { error: revisionError.message || "Drawing created, but the file couldn't be saved." };
 
   revalidatePath("/architect/drawings");
   redirect(`/architect/drawings/${drawing.id}`);
@@ -119,7 +122,7 @@ export async function createRevision(
   const uploaded = await uploadDrawingFile(formData, `drawings/${drawing.project_id}`);
   if (uploaded.error) return { error: uploaded.error };
 
-  await supabase.from("drawing_revisions").insert({
+  const { error: revisionError } = await supabase.from("drawing_revisions").insert({
     drawing_id: drawingId,
     revision_no: (drawing.current_revision ?? 0) + 1,
     status: "draft",
@@ -127,6 +130,7 @@ export async function createRevision(
     notes: String(formData.get("notes") || ""),
     uploaded_by: ctx.userId,
   });
+  if (revisionError) return { error: revisionError.message || "Couldn't save the revision." };
 
   // Deliberately does NOT touch drawings.status / current_revision — that
   // only advances once the architect explicitly submits (see submitToOwner).
@@ -155,11 +159,17 @@ export async function submitToOwner(drawingId: string, revisionId: string) {
     .maybeSingle();
   if (!revision) return;
 
-  await supabase
-    .from("drawings")
-    .update({ status: "owner_review", current_revision: revision.revision_no })
-    .eq("id", drawingId);
-  await supabase.from("drawing_revisions").update({ status: "owner_review" }).eq("id", revisionId);
+  throwIfError(
+    await supabase
+      .from("drawings")
+      .update({ status: "owner_review", current_revision: revision.revision_no })
+      .eq("id", drawingId),
+    "Couldn't submit the drawing to the Owner."
+  );
+  throwIfError(
+    await supabase.from("drawing_revisions").update({ status: "owner_review" }).eq("id", revisionId),
+    "Couldn't update the revision status."
+  );
 
   revalidatePath(`/architect/drawings/${drawingId}`);
   revalidatePath("/architect/drawings");

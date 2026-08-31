@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
 
 // Previously only checked "is anyone signed in" — never role or project
@@ -23,18 +24,21 @@ export async function createSiteIssue(formData: FormData) {
     return;
   }
 
-  await supabase.from("site_issues").insert({
-    project_id: projectId,
-    reported_by: ctx.userId,
-    category: String(formData.get("category") || "other"),
-    severity: String(formData.get("severity") || "medium"),
-    title,
-    description: String(formData.get("description") || ""),
-    status: "open",
-    resolution_notes: null,
-    created_at: new Date().toISOString(),
-    resolved_at: null,
-  });
+  throwIfError(
+    await supabase.from("site_issues").insert({
+      project_id: projectId,
+      reported_by: ctx.userId,
+      category: String(formData.get("category") || "other"),
+      severity: String(formData.get("severity") || "medium"),
+      title,
+      description: String(formData.get("description") || ""),
+      status: "open",
+      resolution_notes: null,
+      created_at: new Date().toISOString(),
+      resolved_at: null,
+    }),
+    "Couldn't report the site issue."
+  );
 
   revalidatePath("/engineer/issues");
 }

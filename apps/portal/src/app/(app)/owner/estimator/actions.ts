@@ -1,13 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
-
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
 
 // These rates are the ONLY source the public cost estimator reads from —
 // never hardcode them in frontend code. Every change is logged to
@@ -23,15 +18,21 @@ export async function updateRate(formData: FormData) {
   if (!rate) return;
   if (Number(rate.percent) === newPercent) return;
 
-  await supabase.from("estimator_rates").update({ percent: newPercent }).eq("id", id);
-  await supabase.from("estimator_rate_history").insert({
-    rate_id: id,
-    key: rate.component,
-    old_value: rate.percent,
-    new_value: newPercent,
-    changed_by: ctx.userId,
-    changed_at: new Date().toISOString(),
-  });
+  throwIfError(
+    await supabase.from("estimator_rates").update({ percent: newPercent }).eq("id", id),
+    "Couldn't update the rate."
+  );
+  throwIfError(
+    await supabase.from("estimator_rate_history").insert({
+      rate_id: id,
+      key: rate.component,
+      old_value: rate.percent,
+      new_value: newPercent,
+      changed_by: ctx.userId,
+      changed_at: new Date().toISOString(),
+    }),
+    "Couldn't log the rate change."
+  );
 
   revalidatePath("/owner/estimator");
 }
@@ -43,6 +44,9 @@ export async function updatePackageRate(formData: FormData) {
   const ratePerSqft = Number(formData.get("rate_per_sqft") || 0);
   if (!id || !ratePerSqft) return;
 
-  await supabase.from("estimator_packages").update({ rate_per_sqft: ratePerSqft }).eq("id", id);
+  throwIfError(
+    await supabase.from("estimator_packages").update({ rate_per_sqft: ratePerSqft }).eq("id", id),
+    "Couldn't update the package rate."
+  );
   revalidatePath("/owner/estimator");
 }
