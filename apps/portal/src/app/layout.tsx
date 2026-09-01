@@ -13,12 +13,16 @@ export const metadata: Metadata = {
   description: "Buildhaus construction management portal.",
   manifest: "/manifest.webmanifest",
   robots: { index: false, follow: false, nocache: true },
-  // app/icon.svg (the official icon vector) is auto-detected by Next.js and
-  // takes priority in browsers that support SVG favicons; these are the
-  // raster fallbacks for the ones that don't, generated straight from the
-  // same file (packages/brand/assets/logo/icon-orange-4x.png).
+  // Next.js's app/icon.svg file-convention auto-detection does NOT fire
+  // once `icons` is set explicitly here (the two don't merge — confirmed
+  // by inspecting the rendered <head>, despite what the file-convention
+  // docs imply) — so the SVG entry is listed explicitly, first, so
+  // browsers that support SVG favicons (most current ones) prefer it over
+  // the raster fallbacks below, generated from the same source file
+  // (packages/brand/assets/logo/icon-orange-4x.png).
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
