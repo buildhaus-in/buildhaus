@@ -1,26 +1,33 @@
 // ============================================================================
-// Buildhaus · scripts/seed-users.mjs
+// Buildhaus · scripts/link-real-users.mjs
 // ----------------------------------------------------------------------------
-// Creates the four demo logins, links profiles + roles, and migrates the
-// original "Sunil Reddy villa" prototype demo into the real schema so you can
-// sign in and immediately see live data.
+// This Supabase project already had four real accounts created for the four
+// app roles before this script ever ran (real @buildhaus.in emails, not the
+// placeholder @buildhaus.example demo logins scripts/seed-users.mjs creates)
+// — confirmed by their user_metadata.full_name each ending in "— <Role>",
+// and all four having genuine last_sign_in_at timestamps. This script links
+// THOSE existing accounts to profiles/roles and the sample project data,
+// instead of creating new placeholder ones. It never creates a user and
+// never touches anyone's password — look-up only.
 //
-//   node scripts/seed-users.mjs
+// Two other accounts already exist in this project (prasanna@buildhaus.in,
+// preetham.family@buildhaus.in) with no role suffix in their name — left
+// alone entirely; nothing here touches them.
+//
+//   node scripts/link-real-users.mjs
 //
 // Requires in .env(.local): NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-// Run AFTER migrations + seed.sql.
+// Run AFTER migrations + seed.sql (supabase/seed.sql — provides the ORG row
+// and the roles catalogue this script looks up by key).
 // ============================================================================
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 // Node 18's global fetch has no WebSocket constructor, which
 // @supabase/supabase-js's realtime client requires even though this script
-// never subscribes to anything — without this it throws
-// "Node.js 18 detected without native WebSocket support" before any of the
-// actual seeding logic runs. `ws` is already a devDependency for exactly
-// this reason; wiring it in here is the missing half of that fix.
+// never subscribes to anything — without this it throws "Node.js 18
+// detected without native WebSocket support" before any seeding logic runs.
 import ws from "ws";
 
-// Minimal .env loader (no dependency): reads .env.local then .env
 function loadEnv() {
   for (const f of [".env.local", ".env"]) {
     try {
@@ -45,11 +52,12 @@ const db = createClient(URL, KEY, {
 });
 const ORG = "00000000-0000-0000-0000-0000000000b1";
 
-const USERS = [
-  { email: "owner@buildhaus.example",    password: "Buildhaus#Owner1",    name: "Samanth (Owner)",  role: "owner" },
-  { email: "engineer@buildhaus.example", password: "Buildhaus#Engineer1", name: "Murali Krishna",   role: "site_engineer" },
-  { email: "architect@buildhaus.example",password: "Buildhaus#Architect1",name: "Priya (Architect)",role: "architect" },
-  { email: "client@buildhaus.example",   password: "Buildhaus#Client1",   name: "Sunil Reddy",      role: "client" },
+// Real email -> app role, matched from each account's own user_metadata.full_name.
+const REAL_USERS = [
+  { email: "samanthreddy.nalagatla@buildhaus.in", role: "owner",        label: "Owner" },
+  { email: "murali@buildhaus.in",                 role: "site_engineer",label: "Site Engineer" },
+  { email: "sahithi@buildhaus.in",                role: "architect",    label: "Architect" },
+  { email: "sunilreddy@buildhaus.in",              role: "client",       label: "Client" },
 ];
 
 async function roleId(key) {
@@ -57,70 +65,64 @@ async function roleId(key) {
   return data?.id;
 }
 
-async function ensureUser(u) {
-  // Try to create; if it already exists, look it up. The SDK version this
-  // runs against throws AuthApiError (code "email_exists") rather than
-  // returning { error } for a duplicate email, so both paths are handled.
-  let userId;
-  let data, error;
-  try {
-    ({ data, error } = await db.auth.admin.createUser({
-      email: u.email, password: u.password, email_confirm: true,
-      user_metadata: { full_name: u.name },
-    }));
-  } catch (e) {
-    error = e;
-  }
-  if (error) {
-    // Whatever shape the "this email is already registered" error takes in
-    // this SDK version (status 422 has shown up both as a returned `error`
-    // and as a thrown AuthApiError depending on call), the reliable check
-    // is just: does a user with this email actually exist? If so, use it;
-    // any other failure re-throws via the final `if (!userId) throw error`.
-    const { data: list } = await db.auth.admin.listUsers();
-    userId = list.users.find((x) => x.email === u.email)?.id;
-    if (!userId) throw error;
-    console.log(`  • exists: ${u.email}`);
-  } else {
-    userId = data.user.id;
-    console.log(`  • created: ${u.email}`);
-  }
+async function findAuthUser(email) {
+  // listUsers() has no reliable server-side email filter in this SDK
+  // version (confirmed empirically — a ?email= query param is ignored), so
+  // fetch the full page and match client-side. Fine at this project's scale.
+  const { data, error } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (error) throw error;
+  return data.users.find((u) => u.email === email);
+}
 
-  await db.from("profiles").upsert({ id: userId, organisation_id: ORG, full_name: u.name });
+async function linkUser(u) {
+  const authUser = await findAuthUser(u.email);
+  if (!authUser) {
+    console.log(`  ✗ NOT FOUND: ${u.email} (${u.label}) — expected this to already exist. Skipping.`);
+    return null;
+  }
+  const userId = authUser.id;
+  const fullName = (authUser.user_metadata?.full_name || u.label).replace(/\s*—\s*.+$/, "").trim();
+
+  await db.from("profiles").upsert({ id: userId, organisation_id: ORG, full_name: fullName });
   const rid = await roleId(u.role);
   if (rid) {
     const { data: existing } = await db.from("user_roles")
       .select("id").eq("profile_id", userId).eq("role_id", rid).maybeSingle();
     if (!existing) await db.from("user_roles").insert({ profile_id: userId, role_id: rid });
   }
+  console.log(`  • linked: ${u.email} → ${u.label} (${fullName})`);
   return userId;
 }
 
 async function main() {
-  console.log("Seeding demo users…");
+  console.log("Linking real accounts to profiles/roles…");
   const ids = {};
-  for (const u of USERS) ids[u.role] = await ensureUser(u);
+  for (const u of REAL_USERS) {
+    const id = await linkUser(u);
+    if (!id) {
+      console.error(`\nAborting: ${u.email} wasn't found. Nothing after this point ran.`);
+      process.exit(1);
+    }
+    ids[u.role] = id;
+  }
 
   console.log("Migrating the Sunil Reddy villa demo project…");
 
-  // Client record (link to the client login).
   let { data: client } = await db.from("clients")
-    .select("id").eq("organisation_id", ORG).eq("full_name", "Sunil Reddy").maybeSingle();
+    .select("id").eq("organisation_id", ORG).eq("profile_id", ids.client).maybeSingle();
   if (!client) {
-    const { data } = await db.from("clients").insert({
+    const { data, error } = await db.from("clients").insert({
       organisation_id: ORG, profile_id: ids.client, full_name: "Sunil Reddy",
       mobile: "+91 98480 00000", city: "Nellore", state: "Andhra Pradesh",
     }).select("id").single();
+    if (error) throw error;
     client = data;
-  } else {
-    await db.from("clients").update({ profile_id: ids.client }).eq("id", client.id);
   }
 
-  // Project (reuse by code if present).
   let { data: project } = await db.from("projects")
     .select("id").eq("organisation_id", ORG).eq("code", "BH-2026-0001").maybeSingle();
   if (!project) {
-    const { data } = await db.from("projects").insert({
+    const { data, error } = await db.from("projects").insert({
       organisation_id: ORG, code: "BH-2026-0001",
       name: "Sunil Reddy G+2 Duplex Villa", client_id: client.id,
       site_address: "Kotha Kalava, Nellore", project_type: "duplex",
@@ -130,10 +132,10 @@ async function main() {
       current_stage: "RCC structure",
       start_date: "2025-09-01", planned_completion: "2026-08-15",
     }).select("id").single();
+    if (error) throw error;
     project = data;
   }
 
-  // Assign engineer + architect (project_members spine).
   for (const [role, pid] of [["site_engineer", ids.site_engineer], ["architect", ids.architect]]) {
     const { data: exists } = await db.from("project_members")
       .select("id").eq("project_id", project.id).eq("profile_id", pid).eq("role_key", role).maybeSingle();
@@ -141,7 +143,6 @@ async function main() {
       .insert({ project_id: project.id, profile_id: pid, role_key: role });
   }
 
-  // 25 standard stages if none.
   const { count: stageCount } = await db.from("project_stages")
     .select("*", { count: "exact", head: true }).eq("project_id", project.id);
   if (!stageCount) {
@@ -158,7 +159,6 @@ async function main() {
     await db.from("project_stages").insert(rows);
   }
 
-  // A few tasks for the engineer.
   const { count: taskCount } = await db.from("tasks")
     .select("*", { count: "exact", head: true }).eq("project_id", project.id);
   if (!taskCount) {
@@ -172,7 +172,6 @@ async function main() {
     ]);
   }
 
-  // Materials snapshot.
   const { count: matCount } = await db.from("project_materials")
     .select("*", { count: "exact", head: true }).eq("project_id", project.id);
   if (!matCount) {
@@ -183,7 +182,6 @@ async function main() {
     ]);
   }
 
-  // Payment schedule (client-visible).
   const { count: payCount } = await db.from("client_payment_schedules")
     .select("*", { count: "exact", head: true }).eq("project_id", project.id);
   if (!payCount) {
@@ -199,8 +197,6 @@ async function main() {
       { organisation_id: ORG, project_id: project.id, direction: "inbound", party_type: "client", amount: 2100000, payment_date: "2025-11-14", mode: "bank" },
       { organisation_id: ORG, project_id: project.id, direction: "outbound", party_type: "supplier", amount: 456000, payment_date: "2025-12-02", mode: "bank" },
     ]);
-    // Invoices + receipts so the client Payment summary (Invoiced / Paid /
-    // Outstanding) is internally consistent for the demo.
     const { data: inv1 } = await db.from("client_invoices").insert(
       { project_id: project.id, invoice_no: "INV-0001", amount: 1050000, invoice_date: "2025-09-01", status: "paid" }
     ).select("id").single();
@@ -216,8 +212,8 @@ async function main() {
     ]);
   }
 
-  console.log("\nDone. Demo logins (change these after first sign-in):");
-  for (const u of USERS) console.log(`  ${u.role.padEnd(14)} ${u.email}  /  ${u.password}`);
+  console.log("\nDone. Sign in at /login with each person's existing real email + their own password:");
+  for (const u of REAL_USERS) console.log(`  ${u.role.padEnd(14)} ${u.email}`);
 }
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });

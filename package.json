@@ -22,14 +22,17 @@
     "demo:reset": "node scripts/reset-demo-data.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.6.2",
-    "vitest": "^2.1.9",
-    "@vitejs/plugin-react": "^4.3.4",
-    "@testing-library/react": "^16.0.1",
-    "@testing-library/jest-dom": "^6.6.3",
-    "jsdom": "^25.0.1",
     "@playwright/test": "^1.48.2",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.0.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
   }
 }
