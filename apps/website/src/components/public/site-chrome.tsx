@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { Logo } from "@buildhaus/ui";
 import { PORTAL_URL } from "@/lib/env";
 
 // Shared header/footer for every public, no-login page (home, about,
 // services, services/[slug], packages, packages/[slug], cost-estimator,
 // quotation/[token], projects, process, materials, contact, enquiry,
 // request-site-visit, request-callback, faq). Carries the official brand
-// identity: the Buildhaus lockup in the header (orange mark, navy wordmark)
-// and a deep-navy footer panel, so the whole public site reads as one brand.
+// identity — the exact shipped logo files (public/brand/*.svg, copied
+// verbatim from "Buildhaus Logo File/", never redrawn) in the header and a
+// deep-navy footer panel, so the whole public site reads as one brand.
+//
+// Header/footer use the wordmark file directly (public/brand/wordmark-*.svg)
+// rather than the shared <Logo> icon+wordmark component — orange wordmark on
+// the light/cream header and footer companies-column background, white
+// wordmark on the dark navy footer panel, per the brand file structure.
 
 const NAV_LINKS = [
   { href: "/services", label: "Services" },
@@ -22,7 +27,14 @@ export function PublicHeader() {
     <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur print:hidden">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link href="/" aria-label="Buildhaus — home">
-          <Logo tagline="Construction · Interiors" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- the
+              official logo SVG, served byte-for-byte as shipped; not a
+              content image next/image should optimise/rewrite. */}
+          <img
+            src="/brand/wordmark-orange.svg"
+            alt="Buildhaus — Design, Build, Deliver"
+            className="h-auto w-[135px] sm:w-[148px] md:w-[190px]"
+          />
         </Link>
         <nav className="hidden items-center gap-1 text-sm md:flex">
           {NAV_LINKS.map((l) => (
@@ -79,10 +91,8 @@ export function PublicFooter() {
       <div className="mx-auto max-w-5xl px-5 py-12">
         <div className="grid gap-8 sm:grid-cols-4">
           <div>
-            <Logo
-              wordmarkClassName="text-white"
-              tagline="Construction · Interiors"
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element -- see PublicHeader above */}
+            <img src="/brand/wordmark-white.svg" alt="Buildhaus" className="h-auto w-[160px]" />
             <p className="mt-4 max-w-[230px] text-sm text-white/70">
               Design-led construction across Andhra Pradesh &amp; Telangana —
               Hyderabad and Nellore. From blueprint to handover — built exactly

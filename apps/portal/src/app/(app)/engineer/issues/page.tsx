@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button, Badge, StatusBadge } from "@buildhaus/ui";
+import { Card, Badge, StatusBadge, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Textarea, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -39,7 +39,7 @@ export default async function EngineerIssues() {
         {projects.length === 0 ? (
           <div className="text-sm text-muted">You aren&apos;t assigned to any projects yet.</div>
         ) : (
-          <form action={createSiteIssue} className="space-y-3">
+          <ActionForm action={createSiteIssue} successMessage="Issue raised." className="space-y-3">
             <div className="grid gap-x-4 sm:grid-cols-3">
               <Select label="Project" name="project_id" defaultValue={projects[0].id}>
                 {projects.map((p: any) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
@@ -53,8 +53,8 @@ export default async function EngineerIssues() {
             </div>
             <Input label="Title" name="title" placeholder="Short summary of the issue" />
             <Textarea label="Description" name="description" placeholder="What happened, where, and any immediate action taken…" />
-            <Button type="submit">Raise issue</Button>
-          </form>
+            <SubmitButton>Raise issue</SubmitButton>
+          </ActionForm>
         )}
       </Card>
 

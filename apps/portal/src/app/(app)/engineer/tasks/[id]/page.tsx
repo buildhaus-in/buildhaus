@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Badge, StatusBadge, ProgressBar, Button } from "@buildhaus/ui";
+import { Card, Badge, StatusBadge, ProgressBar, SubmitButton } from "@buildhaus/ui";
 import { Input, Textarea } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
 import { notFound } from "next/navigation";
@@ -74,7 +74,7 @@ export default async function TaskDetail({ params }: { params: { id: string } })
         <form action={updateTaskProgress} className="mt-4 flex items-end gap-2">
           <input type="hidden" name="task_id" value={task.id} />
           <Input label="Update progress (%)" name="progress" type="number" min={0} max={100} defaultValue={task.progress} className="max-w-[140px]" />
-          <Button type="submit" variant="outline">Save progress</Button>
+          <SubmitButton variant="outline">Save progress</SubmitButton>
         </form>
       </Card>
 
@@ -104,25 +104,25 @@ export default async function TaskDetail({ params }: { params: { id: string } })
           {task.status === "assigned" && !task.accepted_at && (
             <form action={acceptTask}>
               <input type="hidden" name="task_id" value={task.id} />
-              <Button type="submit" variant="outline">Accept task</Button>
+              <SubmitButton variant="outline">Accept task</SubmitButton>
             </form>
           )}
           {task.status === "assigned" && (
             <form action={startTask}>
               <input type="hidden" name="task_id" value={task.id} />
-              <Button type="submit">Start work</Button>
+              <SubmitButton>Start work</SubmitButton>
             </form>
           )}
           {task.status === "blocked" && (
             <form action={resumeTask}>
               <input type="hidden" name="task_id" value={task.id} />
-              <Button type="submit">Resume work</Button>
+              <SubmitButton>Resume work</SubmitButton>
             </form>
           )}
           {task.status === "in_progress" && (
             <form action={submitTaskForReview}>
               <input type="hidden" name="task_id" value={task.id} />
-              <Button type="submit">Submit for Owner review</Button>
+              <SubmitButton pendingLabel="Submitting…">Submit for Owner review</SubmitButton>
             </form>
           )}
         </div>
@@ -131,7 +131,7 @@ export default async function TaskDetail({ params }: { params: { id: string } })
           <form action={markTaskBlocked} className="mt-4 flex items-end gap-2">
             <input type="hidden" name="task_id" value={task.id} />
             <Textarea label="Mark blocked — reason" name="blocker_reason" className="min-h-[44px] flex-1" placeholder="What's blocking this task?" />
-            <Button type="submit" variant="danger">Mark blocked</Button>
+            <SubmitButton variant="danger">Mark blocked</SubmitButton>
           </form>
         )}
         {task.status === "submitted" && (
@@ -159,7 +159,7 @@ export default async function TaskDetail({ params }: { params: { id: string } })
         <form action={addTaskComment} className="mt-4 flex items-end gap-2">
           <input type="hidden" name="task_id" value={task.id} />
           <Textarea label="Add a comment" name="body" className="min-h-[44px] flex-1" placeholder="Update the Owner on this task…" />
-          <Button type="submit" variant="outline">Post</Button>
+          <SubmitButton variant="outline">Post</SubmitButton>
         </form>
       </Card>
     </div>

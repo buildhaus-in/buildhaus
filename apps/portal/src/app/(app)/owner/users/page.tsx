@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Badge, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { ROLE_LABEL } from "@/lib/rbac";
@@ -29,7 +29,7 @@ export default async function UsersPage() {
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Add a user</h2>
-        <form action={createUser} className="grid gap-x-4 sm:grid-cols-2">
+        <ActionForm action={createUser} successMessage="User created." className="grid gap-x-4 sm:grid-cols-2">
           <Input label="Full name" name="full_name" placeholder="Murali Krishna" required />
           <Input label="Email" name="email" type="email" placeholder="murali@buildhaus.example" required />
           <Input label="Temp password" name="password" type="text" placeholder="set-a-strong-one" required />
@@ -39,8 +39,8 @@ export default async function UsersPage() {
             <option value="client">Client</option>
             <option value="owner">Owner</option>
           </Select>
-          <div className="sm:col-span-2"><Button type="submit">Create user</Button></div>
-        </form>
+          <div className="sm:col-span-2"><SubmitButton>Create user</SubmitButton></div>
+        </ActionForm>
         <p className="mt-2 text-xs text-muted">
           The user signs in at /login with this email and temp password. Ask them to change it after first sign-in.
         </p>
@@ -51,7 +51,7 @@ export default async function UsersPage() {
         {assignable.length === 0 ? (
           <div className="text-sm text-muted">Create a Site Engineer or Architect first.</div>
         ) : (
-          <form action={assignToProject} className="grid gap-x-4 sm:grid-cols-3">
+          <ActionForm action={assignToProject} successMessage="Assigned." className="grid gap-x-4 sm:grid-cols-3">
             <Select label="Person" name="profile_id">
               {assignable.map((p: any) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
             </Select>
@@ -62,8 +62,8 @@ export default async function UsersPage() {
               <option value="site_engineer">Site Engineer</option>
               <option value="architect">Architect</option>
             </Select>
-            <div className="sm:col-span-3"><Button type="submit">Assign</Button></div>
-          </form>
+            <div className="sm:col-span-3"><SubmitButton>Assign</SubmitButton></div>
+          </ActionForm>
         )}
       </Card>
 

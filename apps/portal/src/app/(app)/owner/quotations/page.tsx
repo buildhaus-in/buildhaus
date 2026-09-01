@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Badge, Button } from "@buildhaus/ui";
+import { Card, Badge, buttonClass } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
 
@@ -57,8 +57,10 @@ export default async function QuotationsPage() {
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3 text-xs text-muted">
                   <span>Created {dateLabel(q.created_at)}{q.valid_until ? ` · valid until ${dateLabel(q.valid_until)}` : ""} · v{q.current_version}</span>
-                  <Link href={`/owner/quotations/${q.id}/download`}>
-                    <Button variant="outline">Download</Button>
+                  {/* buttonClass() instead of nesting <Button><button> inside
+                      this <Link><a> — see owner/website/page.tsx for why. */}
+                  <Link href={`/owner/quotations/${q.id}/download`} className={buttonClass("outline")}>
+                    Download
                   </Link>
                 </div>
               </Card>

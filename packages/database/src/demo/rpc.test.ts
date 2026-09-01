@@ -30,21 +30,45 @@ afterEach(() => {
 });
 
 describe("demoRpc('next_code')", () => {
-  it("generates sequential codes within the same scope", async () => {
+  // The tmp dir starts empty, so getDemoDB() falls back to the full seed
+  // set (see db.ts's loadTables()) — which already ships 3 projects with
+  // hardcoded codes BH-<current year>-0001..0003 (demo/seed.ts) that were
+  // never issued through next_code, so code_counters starts at 0 for scope
+  // "project" while those 3 codes already exist. Sequential numbering has
+  // to continue from there, not restart at 0001.
+  const year = new Date().getFullYear();
+
+  it("continues sequential codes from the highest code already in the table, not from code_counters alone", async () => {
     const first = await demoRpc("next_code", { p_scope: "project", p_prefix: "BH" });
     const second = await demoRpc("next_code", { p_scope: "project", p_prefix: "BH" });
     const third = await demoRpc("next_code", { p_scope: "project", p_prefix: "BH" });
 
     expect(first.error).toBeNull();
-    expect(first.data).toMatch(/^BH-\d{4}-0001$/);
-    expect(second.data).toMatch(/^BH-\d{4}-0002$/);
-    expect(third.data).toMatch(/^BH-\d{4}-0003$/);
+    expect(first.data).toBe(`BH-${year}-0004`);
+    expect(second.data).toBe(`BH-${year}-0005`);
+    expect(third.data).toBe(`BH-${year}-0006`);
+  });
+
+  // Regression test for the Create Project "silent failure" bug: before the
+  // fix, next_code ignored the 3 seeded projects entirely and handed out
+  // "BH-<year>-0001" again on the very first call, colliding with the
+  // seeded project of the same code — which violates the real schema's
+  // `unique(organisation_id, code)` constraint (see
+  // supabase/migrations/0003_crm_clients.sql) and made the insert fail with
+  // an error that owner/projects/actions.ts silently discarded.
+  it("never reuses a code already present on an existing row", async () => {
+    const db = getDemoDB();
+    const existingCodes = new Set(db.table("projects").map((p: any) => p.code));
+    expect(existingCodes.has(`BH-${year}-0001`)).toBe(true); // sanity: seed data really does collide
+
+    const { data: code } = await demoRpc("next_code", { p_scope: "project", p_prefix: "BH" });
+    expect(existingCodes.has(code)).toBe(false);
   });
 
   it("keeps separate sequences per scope", async () => {
     const projectCode = await demoRpc("next_code", { p_scope: "project", p_prefix: "BH" });
     const quotationCode = await demoRpc("next_code", { p_scope: "quotation", p_prefix: "BH-Q" });
-    expect(projectCode.data).toMatch(/^BH-\d{4}-0001$/);
+    expect(projectCode.data).toBe(`BH-${year}-0004`);
     expect(quotationCode.data).toMatch(/^BH-Q-\d{4}-0001$/);
   });
 });

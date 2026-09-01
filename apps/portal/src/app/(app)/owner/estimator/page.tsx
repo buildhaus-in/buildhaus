@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Badge, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input } from "@buildhaus/ui";
 import { inr } from "@buildhaus/utils";
 import { updateRate, updatePackageRate } from "./actions";
@@ -30,15 +30,15 @@ export default async function EstimatorPage() {
         <h2 className="mb-3 font-bold text-ivory">Package rates (₹ / sqft)</h2>
         <div className="space-y-3">
           {packageList.map((p: any) => (
-            <form key={p.id} action={updatePackageRate} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-3">
+            <ActionForm key={p.id} action={updatePackageRate} successMessage="Saved." resetOnSuccess={false} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-3">
               <input type="hidden" name="id" value={p.id} />
               <div className="flex-1 min-w-[160px]">
                 <div className="text-sm font-semibold text-sandlight">{p.label}</div>
                 <div className="text-xs text-muted">{p.description}</div>
               </div>
               <Input label="Rate per sqft (₹)" name="rate_per_sqft" type="number" defaultValue={p.rate_per_sqft} className="!mb-0 w-40" />
-              <Button type="submit" variant="outline">Save</Button>
-            </form>
+              <SubmitButton variant="outline">Save</SubmitButton>
+            </ActionForm>
           ))}
         </div>
       </Card>
@@ -51,7 +51,7 @@ export default async function EstimatorPage() {
         <p className="mb-3 text-xs text-muted">These should add up to 100% — they split a package&apos;s per-sqft rate across cost heads.</p>
         <div className="space-y-2">
           {rateList.map((r: any) => (
-            <form key={r.id} action={updateRate} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3">
+            <ActionForm key={r.id} action={updateRate} successMessage="Saved." resetOnSuccess={false} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-3">
               <input type="hidden" name="id" value={r.id} />
               <span className="text-sm text-sandlight">{r.label}</span>
               <div className="flex items-center gap-2">
@@ -60,9 +60,9 @@ export default async function EstimatorPage() {
                   className="w-20 rounded-lg border border-border bg-card px-2 py-1.5 text-right text-sm text-ink focus:border-brand"
                 />
                 <span className="text-xs text-muted">%</span>
-                <Button type="submit" variant="outline">Save</Button>
+                <SubmitButton variant="outline">Save</SubmitButton>
               </div>
-            </form>
+            </ActionForm>
           ))}
         </div>
       </Card>

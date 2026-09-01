@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button, StatusBadge } from "@buildhaus/ui";
+import { Card, Button, StatusBadge, buttonClass } from "@buildhaus/ui";
 import { Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -44,9 +44,7 @@ export default async function ArchitectDrawings({
           <h1 className="text-xl font-bold text-ivory">Drawings</h1>
           <p className="text-sm text-muted">All drawings across your assigned projects.</p>
         </div>
-        <Link href="/architect/drawings/new">
-          <Button>+ Upload drawing</Button>
-        </Link>
+        <Link href="/architect/drawings/new" className={buttonClass()}>+ Upload drawing</Link>
       </div>
 
       <Card>
@@ -75,7 +73,7 @@ export default async function ArchitectDrawings({
         <EmptyState
           title="No drawings match"
           hint={projectIds.length === 0 ? "You aren't assigned to any projects yet." : "Try clearing the filters, or upload a new drawing."}
-          action={<Link href="/architect/drawings/new"><Button>Upload drawing</Button></Link>}
+          action={<Link href="/architect/drawings/new" className={buttonClass()}>Upload drawing</Link>}
         />
       ) : (
         <Card className="p-0">

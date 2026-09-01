@@ -31,7 +31,7 @@ export default async function Home() {
           The home you envision is the home you receive.
         </h1>
         <p className="mt-4 max-w-xl text-sand">
-          BuildHaus manages design, estimation, procurement and site execution under one
+          Buildhaus manages design, estimation, procurement and site execution under one
           accountable team — with every cost visible and every milestone reported before
           you have to ask. Clear processes. Honest pricing. Quality without compromise.
         </p>

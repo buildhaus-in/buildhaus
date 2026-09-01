@@ -2,13 +2,13 @@ import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card } from "@buildhaus/ui";
 
-// The two official BuildHaus client journeys from the brand strategy:
+// The two official Buildhaus client journeys from the brand strategy:
 // how an engagement starts (sales journey) and how the build itself runs
 // (construction journey). Every step is designed so the client never has
 // to ask what happens next.
 
 const SALES_JOURNEY: { title: string; body: string }[] = [
-  { title: "Discovery", body: "You find BuildHaus through Instagram, Google or a referral — usually while researching who can actually be trusted with your plot." },
+  { title: "Discovery", body: "You find Buildhaus through Instagram, Google or a referral — usually while researching who can actually be trusted with your plot." },
   { title: "First contact", body: "We open with one smart question about your build, not a brochure." },
   { title: "Qualification call", body: "Plot, stage, budget, timeline. This call is a filter, not a pitch — it tells both of us whether we are the right fit." },
   { title: "Site visit & discovery meeting", body: "We walk the plot and sit with your family to understand the vision and what the home needs to be — including Vastu, where it matters to you." },

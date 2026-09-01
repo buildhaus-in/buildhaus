@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
-import { Logo } from "@buildhaus/ui";
 import type { NavGroup, NavItem } from "@/lib/nav-config";
 
 function useActive() {
@@ -19,7 +18,14 @@ export function TopBar({ roleLabel, userName }: { roleLabel: string; userName: s
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <Logo markClassName="h-6 w-6" wordmarkClassName="text-base" />
+          {/* Wordmark once the bar has room for it; icon alone below that —
+              per brand usage, wordmark in the portal header, icon if the
+              header/sidebar is too narrow. Both are the shipped SVG files,
+              served as-is (public/brand/*.svg). */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- official logo SVG, not a content image */}
+          <img src="/brand/wordmark-orange.svg" alt="Buildhaus" className="hidden h-4 w-auto sm:block" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- official logo SVG, not a content image */}
+          <img src="/brand/icon-orange.svg" alt="Buildhaus" className="h-6 w-6 sm:hidden" />
           <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] uppercase tracking-wide text-sand">{roleLabel}</span>
         </div>
         <div className="flex items-center gap-3">

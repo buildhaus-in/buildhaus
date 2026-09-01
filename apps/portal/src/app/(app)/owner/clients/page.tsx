@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Badge, Button, StatCard } from "@buildhaus/ui";
+import { Card, Badge, StatCard, SubmitButton } from "@buildhaus/ui";
 import { Input } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
@@ -101,7 +101,7 @@ export default async function ClientsPage() {
                 <div className="mt-3 border-t border-border pt-3">
                   <form action={resendApproval}>
                     <input type="hidden" name="id" value={a.id} />
-                    <Button type="submit" variant="outline">Rework done — resend to client</Button>
+                    <SubmitButton variant="outline">Rework done — resend to client</SubmitButton>
                   </form>
                 </div>
               </div>
@@ -153,14 +153,14 @@ export default async function ClientsPage() {
                     <Input label="Cost impact (₹)" name="cost_impact" type="number" />
                     <Input label="Timeline impact (days)" name="timeline_impact_days" type="number" />
                     <div className="flex items-end gap-2">
-                      <Button type="submit">Price &amp; share</Button>
+                      <SubmitButton>Price &amp; share</SubmitButton>
                     </div>
                   </form>
                 )}
                 {c.status !== "cost_time_shared" && (
                   <form action={rejectChangeRequest} className="mt-2">
                     <input type="hidden" name="id" value={c.id} />
-                    <Button type="submit" variant="danger">Reject request</Button>
+                    <SubmitButton variant="danger">Reject request</SubmitButton>
                   </form>
                 )}
               </div>

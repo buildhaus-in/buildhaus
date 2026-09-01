@@ -4,7 +4,6 @@ import Link from "next/link";
 import { signIn } from "./actions";
 import { Input } from "@buildhaus/ui";
 import { Button } from "@buildhaus/ui";
-import { Logo } from "@buildhaus/ui";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -20,13 +19,14 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg px-5">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 flex justify-center">
-          <Logo
-            markClassName="h-10 w-10"
-            wordmarkClassName="text-2xl"
-            tagline="Sign in to your workspace"
-          />
+        <Link href="/" className="mb-6 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element -- the
+              official Primary Logo file, With Background, served as shipped
+              (its cream card background is baked into the SVG itself — this
+              is deliberately the only "box" around it, per brand usage). */}
+          <img src="/brand/primary-logo.svg" alt="Buildhaus" className="h-28 w-28 rounded-2xl" />
         </Link>
+        <p className="mb-6 text-center text-sm text-muted">Sign in to your workspace</p>
         <form action={action} className="rounded-xl2 border border-border bg-card p-6">
           <Input label="Email" name="email" type="email" autoComplete="email" placeholder="you@buildhaus.example" />
           <Input label="Password" name="password" type="password" autoComplete="current-password" placeholder="••••••••" />

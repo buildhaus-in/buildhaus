@@ -232,14 +232,17 @@ const styles = StyleSheet.create({
   },
 });
 
-// The BuildHaus "B" monogram, drawn with react-pdf's Svg/Path primitives.
-// The two path d-strings are the same geometry as packages/ui/src/logo.tsx
-// (BrandMark) — keep them in sync if the mark ever changes.
+// The Buildhaus "B" monogram, drawn with react-pdf's Svg/Path primitives.
+// The path d-string is the same geometry as packages/ui/src/logo.tsx's Icon
+// (traced from the real logo vectors, "Buildhaus Logo File/Icon/…/B.svg")
+// — keep them in sync if the mark ever changes.
 function PdfBrandMark({ size = 22 }: { size?: number }) {
   return (
-    <Svg viewBox="0 0 100 100" style={{ width: size, height: size }}>
-      <Path d="M14 8 H61 A19.5 19.5 0 0 1 61 47 H49.5 L14 8 Z" fill={colors.brand} />
-      <Path d="M14 92 L57 53 H63.5 A19.5 19.5 0 0 1 63.5 92 H14 Z" fill={colors.brand} />
+    <Svg viewBox="440 448 620 603" style={{ width: size, height: size }}>
+      <Path
+        d="M868.83,694.21l-80.48-.28,71.27-95.7v-124.9h-394.69v304.48h200.23l-200.23,248.87h403.89c91.81,0,166.23-74.42,166.23-166.23h0c0-91.81-74.42-166.23-166.23-166.23Z"
+        fill={colors.brand}
+      />
     </Svg>
   );
 }

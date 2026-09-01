@@ -1,16 +1,20 @@
 "use server";
 import { createClient } from "@buildhaus/database";
-import { getUserContext } from "@/lib/session";
+import { assertOwner } from "@/lib/authz";
+import { unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 
-async function assertOwner() {
-  const ctx = await getUserContext();
-  if (!ctx || !ctx.roles.includes("owner")) throw new Error("Not authorised");
-  return ctx;
-}
-
-export async function updateOrgSettings(formData: FormData) {
-  const ctx = await assertOwner();
+export async function updateOrgSettings(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  let ctx;
+  try {
+    ctx = await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const orgId = ctx.profile!.organisation_id;
 
@@ -21,15 +25,28 @@ export async function updateOrgSettings(formData: FormData) {
   const timezone = String(formData.get("timezone") || "Asia/Kolkata");
 
   if (name) {
-    await supabase.from("organisations").update({ name, city: city || null, state: state || null }).eq("id", orgId);
+    const result = unwrap(
+      await supabase.from("organisations").update({ name, city: city || null, state: state || null }).eq("id", orgId),
+      "Couldn't update organisation details."
+    );
+    if (!result.ok) return result;
   }
 
   const { data: settingsRow } = await supabase.from("organisation_settings").select("id").eq("organisation_id", orgId).maybeSingle();
   if (settingsRow) {
-    await supabase.from("organisation_settings").update({ currency, timezone }).eq("id", settingsRow.id);
+    const result = unwrap(
+      await supabase.from("organisation_settings").update({ currency, timezone }).eq("id", settingsRow.id),
+      "Couldn't update organisation settings."
+    );
+    if (!result.ok) return result;
   } else {
-    await supabase.from("organisation_settings").insert({ organisation_id: orgId, currency, timezone });
+    const result = unwrap(
+      await supabase.from("organisation_settings").insert({ organisation_id: orgId, currency, timezone }),
+      "Couldn't save organisation settings."
+    );
+    if (!result.ok) return result;
   }
 
   revalidatePath("/owner/settings");
+  return { ok: true, data: null };
 }

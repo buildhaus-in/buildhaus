@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button } from "@buildhaus/ui";
+import { Card, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { updateOrgSettings } from "./actions";
 
@@ -25,7 +25,7 @@ export default async function SettingsPage() {
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Organisation</h2>
-        <form action={updateOrgSettings} className="grid gap-x-4 sm:grid-cols-2">
+        <ActionForm action={updateOrgSettings} successMessage="Settings saved." resetOnSuccess={false} className="grid gap-x-4 sm:grid-cols-2">
           <Input label="Organisation name" name="name" defaultValue={org?.name ?? ""} required />
           <Select label="Currency" name="currency" defaultValue={settings?.currency ?? "INR"}>
             {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -33,8 +33,8 @@ export default async function SettingsPage() {
           <Input label="City" name="city" defaultValue={org?.city ?? ""} />
           <Input label="State" name="state" defaultValue={org?.state ?? ""} />
           <Input label="Timezone" name="timezone" defaultValue={settings?.timezone ?? "Asia/Kolkata"} />
-          <div className="sm:col-span-2"><Button type="submit">Save settings</Button></div>
-        </form>
+          <div className="sm:col-span-2"><SubmitButton>Save settings</SubmitButton></div>
+        </ActionForm>
       </Card>
     </div>
   );

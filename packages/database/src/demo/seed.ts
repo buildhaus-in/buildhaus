@@ -442,12 +442,17 @@ export const SEED: Record<string, Row[]> = {
     { id: "inv-3", project_id: IDS.projectVilla, invoice_no: "BH-INV-1003", amount: 1575000, status: "paid", invoice_date: "2026-02-10" },
     { id: "inv-4", project_id: IDS.projectVilla, invoice_no: "BH-INV-1004", amount: 1575000, status: "issued", invoice_date: dateOnly(-10) },
   ],
+  // schedule_id links each receipt back to the milestone it paid — added in
+  // 0017_finance_ledger_integrity.sql alongside a partial unique index on
+  // (schedule_id) that rejects a second receipt against the same milestone.
+  // Every "paid" row in client_payment_schedules above has exactly one
+  // matching receipt here; keep that 1:1 pairing when editing either list.
   client_receipts: [
-    { id: "rcpt-1", project_id: IDS.projectVilla, amount: 1050000, receipt_date: "2025-09-03", mode: "bank_transfer", receipt_no: "BH-RCPT-1001" },
-    { id: "rcpt-2", project_id: IDS.projectVilla, amount: 1575000, receipt_date: "2025-11-17", mode: "bank_transfer", receipt_no: "BH-RCPT-1002" },
-    { id: "rcpt-3", project_id: IDS.projectDuplex, amount: 1440000, receipt_date: "2026-02-03", mode: "cheque", receipt_no: "BH-RCPT-1003" },
-    { id: "rcpt-4", project_id: IDS.projectCommercial, amount: 2775000, receipt_date: "2026-05-03", mode: "bank_transfer", receipt_no: "BH-RCPT-1004" },
-    { id: "rcpt-5", project_id: IDS.projectVilla, amount: 1575000, receipt_date: "2026-02-12", mode: "bank_transfer", receipt_no: "BH-RCPT-1005" },
+    { id: "rcpt-1", project_id: IDS.projectVilla, schedule_id: "cps-1", amount: 1050000, receipt_date: "2025-09-03", mode: "bank_transfer", receipt_no: "BH-RCPT-1001" },
+    { id: "rcpt-2", project_id: IDS.projectVilla, schedule_id: "cps-2", amount: 1575000, receipt_date: "2025-11-17", mode: "bank_transfer", receipt_no: "BH-RCPT-1002" },
+    { id: "rcpt-3", project_id: IDS.projectDuplex, schedule_id: "cps-6", amount: 1440000, receipt_date: "2026-02-03", mode: "cheque", receipt_no: "BH-RCPT-1003" },
+    { id: "rcpt-4", project_id: IDS.projectCommercial, schedule_id: "cps-9", amount: 2775000, receipt_date: "2026-05-03", mode: "bank_transfer", receipt_no: "BH-RCPT-1004" },
+    { id: "rcpt-5", project_id: IDS.projectVilla, schedule_id: "cps-3", amount: 1575000, receipt_date: "2026-02-12", mode: "bank_transfer", receipt_no: "BH-RCPT-1005" },
   ],
 
   supplier_bills: [

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
-import { Card, Badge, StatCard, EmptyState, Button } from "@buildhaus/ui";
+import { Card, Badge, StatCard, EmptyState, buttonClass } from "@buildhaus/ui";
 import { inr, inrFull, sqft, dateLabel } from "@buildhaus/utils";
 import { PrintButtons, QuotationRequestActions } from "./quotation-actions";
 
@@ -19,9 +19,7 @@ function InvalidOrExpired() {
           title="This quotation link has expired"
           hint="Public quotation links are valid for a limited time. Please run a fresh estimate, or contact us and we'll resend your quotation."
           action={
-            <Link href="/cost-estimator">
-              <Button>Get a new estimate</Button>
-            </Link>
+            <Link href="/cost-estimator" className={buttonClass()}>Get a new estimate</Link>
           }
         />
       </section>

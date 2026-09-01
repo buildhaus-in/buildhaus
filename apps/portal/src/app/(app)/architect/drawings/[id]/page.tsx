@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button, StatusBadge, Badge } from "@buildhaus/ui";
+import { Card, StatusBadge, Badge, SubmitButton } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
 import { submitToOwner } from "../actions";
@@ -105,7 +105,7 @@ export default async function DrawingDetail({ params }: { params: { id: string }
               <p className="text-xs text-muted">Submitting will move this drawing to Owner Review.</p>
             </div>
             <form action={submitToOwner.bind(null, drawing.id, pendingSubmitRevision.id)}>
-              <Button type="submit">Submit to Owner</Button>
+              <SubmitButton pendingLabel="Submitting…">Submit to Owner</SubmitButton>
             </form>
           </div>
         </Card>
