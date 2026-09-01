@@ -27,15 +27,34 @@ export async function recordReceipt(
   }
   const supabase = createClient();
   const projectId = String(formData.get("project_id") || "");
-  const scheduleId = String(formData.get("schedule_id") || "");
+  const scheduleId = String(formData.get("schedule_id") || "") || null;
   const amount = Number(formData.get("amount") || 0);
   const mode = String(formData.get("mode") || "bank_transfer");
   if (!projectId || !amount) return { ok: false, error: "Select a project and enter an amount." };
+
+  // Demo Mode enforces no unique constraints at all (see
+  // packages/database/src/demo/query-builder.ts), so the real Postgres
+  // safeguard added in 0017_finance_ledger_integrity.sql — a partial
+  // unique index rejecting a second receipt against the same
+  // schedule_id — would silently do nothing here. Pre-check explicitly so
+  // "record a receipt twice against the same milestone" fails the same way
+  // (with a clear reason) in both environments, not just the real one.
+  if (scheduleId) {
+    const { data: existingReceipt } = await supabase
+      .from("client_receipts")
+      .select("id")
+      .eq("schedule_id", scheduleId)
+      .maybeSingle();
+    if (existingReceipt) {
+      return { ok: false, error: "This milestone already has a receipt recorded against it." };
+    }
+  }
 
   const receiptNo = `BH-RCPT-${Date.now().toString().slice(-6)}`;
   let result = unwrap(
     await supabase.from("client_receipts").insert({
       project_id: projectId,
+      schedule_id: scheduleId,
       amount,
       receipt_date: new Date().toISOString().slice(0, 10),
       mode,
