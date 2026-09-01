@@ -1,13 +1,14 @@
 # Schema drift follow-up
 
-`supabase/migrations/0018_schema_drift_repair.sql` and
-`0019_schema_drift_repair_2.sql` fix every concrete column/enum mismatch
-found between the real Postgres schema and what `apps/portal` **and**
-`apps/website` actually read and write. 0018 covered the tables touched by
-that session's RBAC-hardening pass; 0019 covered the rest of both apps'
-table surface. This file records what those passes covered, how, and —
-importantly — what's still genuinely unchecked, so the gap doesn't quietly
-disappear.
+`supabase/migrations/0018_schema_drift_repair.sql`,
+`0019_schema_drift_repair_2.sql` and `0020_material_catalogue_fixes.sql`
+fix every concrete column/enum/RLS mismatch found between the real Postgres
+schema and what `apps/portal` **and** `apps/website` actually read and
+write. 0018 covered the tables touched by that session's RBAC-hardening
+pass; 0019 covered the rest of both apps' write surface; 0020 closed out
+the handful of tables neither pass's write-only methodology could see.
+This file records what those passes covered, how, and — importantly —
+what's still genuinely unchecked, so the gap doesn't quietly disappear.
 
 ## Why this class of bug was invisible
 
@@ -125,15 +126,50 @@ literals against the table's DDL: `client_payment_schedules`, `comments`,
 `projects`, `quotation_versions`, `quotations`, `supplier_bills`,
 `testimonials`, `user_roles`, `website_pages`, `website_sections`.
 
-## Still genuinely unchecked
+## The last five, closed out in 0020
 
-Five tables the app uses but never directly `.insert()`/`.update()`/
-`.upsert()`s (only reads, or writes happen exclusively through a Postgres
-function/trigger this pass didn't separately verify): `client_invoices`,
-`material_catalogue`, `project_stages`, `quality_checklists`, `roles`. These
-weren't touched by either pass's methodology (which only diffs write call
-sites) and haven't been read-side verified either — the same risk Demo
-Mode's schema-blindness creates for every other table applies here too.
-Before connecting a real Supabase project, these five plus a spot-check of
-every `.select()` column list against its table's real columns (the same
-technique that caught `notifications` in 0019) is the remaining gap.
+The five tables with no direct `.insert()`/`.update()`/`.upsert()` call
+(only reads, or writes exclusively through `convert_lead_to_project()`) got
+the same read-side check that caught `notifications` in 0019 — every
+`.select()` column list, diffed against the table's real columns.
+`client_invoices`, `project_stages`, `quality_checklists` and `roles` came
+back clean: every column either app ever selects genuinely exists.
+`material_catalogue` had two real issues, both fixed in
+`0020_material_catalogue_fixes.sql`:
+
+- **Column drift**: `apps/website`'s `/materials` page, the quotation
+  PDF/share-link pages, and `owner/quotations/[id]/download` all select
+  `spec`; the real column is `specification`. Renamed to match.
+- **An RLS gap independent of the rename**: `apps/website/src/app/materials
+  /page.tsx` is a public marketing page with no auth check, reading
+  `material_catalogue` with the plain anon client — but `matcat_read`
+  (0010_rls_policies.sql) is `to authenticated` only. Against a real
+  Supabase project this page would render "Material catalogue unavailable"
+  for every visitor, always: RLS silently returns zero rows rather than
+  erroring, so nothing would have caught this outside an actual anon-key
+  request. Fixed with an anon read policy, extending the same "this is
+  deliberately public information" reasoning
+  `0015_public_pricing_read.sql` already applied to
+  `estimator_packages`/`estimator_rates` for the identical reason (this
+  page selects only `id/name/unit/category/spec` — no rate or cost column,
+  no PII) — rather than switching the page to `createAdminClient()` and
+  pulling in the service-role key where an RLS grant does the job just as
+  well (CLAUDE.md: service-role key server-side only, and only where
+  genuinely required).
+
+## What this leaves
+
+Every table the app writes to directly, across both `apps/portal` and
+`apps/website`, has now been checked column-by-column against the real
+schema, and every table it reads from has had its `.select()` column lists
+checked the same way. What's **not** covered by any of this: RLS policies
+whose *predicate* (not a `.select()`/`.insert()` column list) references a
+column that drifted — each rename in 0018/0019/0020 was individually
+checked against `0010_rls_policies.sql`/`0011_triggers_functions.sql` for
+that specific column, but there's no systematic "diff every policy
+predicate" pass the way there was for select/insert column lists. And none
+of this has been run against an actual Postgres instance — every fix here
+is grounded in reading the migration DDL and the call site side by side,
+not in a migration that's actually been applied and exercised. That first
+real `supabase db reset` against a live project remains the genuine
+verification this repo is still missing.
