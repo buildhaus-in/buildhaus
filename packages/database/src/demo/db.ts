@@ -1,7 +1,22 @@
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
+import { cookies } from "next/headers";
 import { SEED } from "./seed";
+
+// Mirrors the table list audit_row() is wired to via the trg_audit_<table>
+// triggers in supabase/migrations/0011_triggers_functions.sql. Demo Mode has
+// no Postgres triggers, so without this mirror these tables get a real
+// audit trail on a live Supabase project but silently none at all in the
+// only environment this app is actually tested in — see
+// docs/SCHEMA-DRIFT-FOLLOWUP.md's sibling note on Demo Mode enforcing no
+// schema; this is the same class of invisible parity gap, for triggers
+// instead of columns.
+const AUDIT_TABLES = new Set([
+  "projects", "payments", "expenses", "quotations", "drawings",
+  "daily_reports", "client_approvals", "purchases", "suppliers", "inspections",
+]);
+const SESSION_COOKIE = "bh_demo_session";
 
 // Demo Mode's "database". apps/website and apps/portal are two independent
 // Next.js server processes (ports 3000/3001) — an in-memory globalThis store
@@ -78,6 +93,39 @@ export class DemoDB {
     persist(this.tables);
   }
 
+  // Mirrors audit_row()'s per-row insert into audit_logs — see AUDIT_TABLES
+  // above. Resolves the acting profile from the demo session cookie the
+  // same way rpc.ts's log_audit stand-in does (current_org_id()/auth.uid()
+  // have no equivalent outside a real Postgres session).
+  private recordAudit(table: string, op: "insert" | "update" | "delete", entityId: string | null | undefined): void {
+    if (!AUDIT_TABLES.has(table)) return;
+    let uid: string | null = null;
+    try {
+      uid = cookies().get(SESSION_COOKIE)?.value ?? null;
+    } catch {
+      // cookies() throws outside a request context (e.g. a script that
+      // constructs DemoDB directly) — the audit row just gets a null actor.
+      uid = null;
+    }
+    const profile = uid ? this.table("profiles").find((p) => p.id === uid) : undefined;
+    this.table("audit_logs").push({
+      id: genId("aud"),
+      organisation_id: profile?.organisation_id ?? null,
+      actor_id: uid,
+      action: op,
+      entity_type: table,
+      entity_id: entityId ?? null,
+      summary: `${op.toUpperCase()} on ${table}`,
+      diff: null,
+      created_at: nowIso(),
+    });
+    // Not folded into the caller's own save() — this can run after that
+    // save already happened (upsert's insert() branch, for example), and a
+    // second persist() of the now-audit-log-carrying tables is cheap and
+    // correct either way at demo scale.
+    this.save();
+  }
+
   insert(name: string, row: Row): Row {
     const final: Row = {
       id: row.id ?? genId(name.slice(0, 4)),
@@ -87,6 +135,7 @@ export class DemoDB {
     };
     this.table(name).push(final);
     this.save();
+    this.recordAudit(name, "insert", final.id);
     return final;
   }
 
@@ -96,6 +145,7 @@ export class DemoDB {
     if (idx >= 0) {
       t[idx] = { ...t[idx], ...row, updated_at: nowIso() };
       this.save();
+      this.recordAudit(name, "update", t[idx].id);
       return t[idx];
     }
     return this.insert(name, row);
@@ -105,6 +155,7 @@ export class DemoDB {
     const matched = this.table(name).filter(pred);
     matched.forEach((r) => Object.assign(r, patch, { updated_at: nowIso() }));
     if (matched.length) this.save();
+    for (const r of matched) this.recordAudit(name, "update", r.id);
     return matched;
   }
 
@@ -113,6 +164,7 @@ export class DemoDB {
     const matched = t.filter(pred);
     this.tables[name] = t.filter((r) => !pred(r));
     if (matched.length) this.save();
+    for (const r of matched) this.recordAudit(name, "delete", r.id);
     return matched;
   }
 }
