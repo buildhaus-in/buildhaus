@@ -33,6 +33,20 @@ alter table client_receipts
 -- "The same receipt number being issued twice" — receipt_no was
 -- app-generated (`BH-RCPT-${Date.now().toString().slice(-6)}`, 6 digits, no
 -- randomness) with nothing in the schema stopping a collision.
+--
+-- Fix (found while auditing the rest of client_receipts against
+-- owner/finance/actions.ts in 0019_schema_drift_repair_2.sql): receipt_no
+-- was never a real column here at all — the original create table
+-- (0007_labour_finance_quality.sql) never had it, and this migration went
+-- straight to indexing it without adding it first. On a real Postgres
+-- project this statement would have failed outright with "column
+-- receipt_no does not exist," which never surfaced because these
+-- migrations have never actually been applied to a live database in this
+-- environment (Demo Mode enforces no schema, so nothing here ever runs
+-- against real Postgres). Adding the column here, in place, rather than
+-- papering over it in a later migration — this one has never shipped
+-- anywhere, so there's no real environment to keep in sync with.
+alter table client_receipts add column if not exists receipt_no text;
 create unique index if not exists client_receipts_receipt_no_key on client_receipts(receipt_no) where receipt_no is not null;
 
 -- "The same milestone being paid twice" — a partial unique index (not a

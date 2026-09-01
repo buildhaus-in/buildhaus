@@ -64,8 +64,14 @@ export async function recordReceipt(
   );
   if (!result.ok) return result;
 
+  // payments.organisation_id is NOT NULL on the real schema (see
+  // 0007_labour_finance_quality.sql) — every insert here previously omitted
+  // it, which Demo Mode's total lack of schema enforcement let through
+  // silently but a real Postgres project would reject outright. Same fix
+  // applied below in markSupplierBillPaid/markContractorBillPaid.
   result = unwrap(
     await supabase.from("payments").insert({
+      organisation_id: ctx.profile!.organisation_id,
       project_id: projectId,
       direction: "inbound",
       amount,
@@ -104,6 +110,7 @@ export async function markSupplierBillPaid(formData: FormData) {
   );
   throwIfError(
     await supabase.from("payments").insert({
+      organisation_id: ctx.profile!.organisation_id,
       project_id: bill.project_id,
       direction: "outbound",
       amount: bill.outstanding,
@@ -133,6 +140,7 @@ export async function markContractorBillPaid(formData: FormData) {
   );
   throwIfError(
     await supabase.from("payments").insert({
+      organisation_id: ctx.profile!.organisation_id,
       project_id: bill.project_id,
       direction: "outbound",
       amount: bill.outstanding,

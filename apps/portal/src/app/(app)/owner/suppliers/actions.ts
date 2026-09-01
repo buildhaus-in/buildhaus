@@ -42,8 +42,9 @@ export async function raisePurchase(
   _prevState: ActionResult<null> | null,
   formData: FormData
 ): Promise<ActionResult<null>> {
+  let ctx;
   try {
-    await assertOwner();
+    ctx = await assertOwner();
   } catch {
     return { ok: false, error: "You must be signed in as the Owner." };
   }
@@ -53,8 +54,11 @@ export async function raisePurchase(
   const materialName = String(formData.get("material_name") || "").trim();
   if (!supplierId || !materialName) return { ok: false, error: "Select a supplier and enter a material." };
 
+  // purchases.organisation_id is NOT NULL on the real schema — previously
+  // never set here (see supabase/migrations/0019_schema_drift_repair_2.sql).
   const result = unwrap(
     await supabase.from("purchases").insert({
+      organisation_id: ctx.profile!.organisation_id,
       supplier_id: supplierId,
       project_id: projectId,
       material_name: materialName,

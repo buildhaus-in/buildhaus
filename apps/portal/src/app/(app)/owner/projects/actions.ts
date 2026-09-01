@@ -18,8 +18,9 @@ export async function uploadDocument(
   _prevState: DocumentFormState,
   formData: FormData
 ): Promise<DocumentFormState> {
+  let ctx;
   try {
-    await assertOwner();
+    ctx = await assertOwner();
   } catch {
     return { error: "You must be signed in as the Owner to upload a document." };
   }
@@ -40,8 +41,12 @@ export async function uploadDocument(
   // Previously ignored: the insert's error was never checked, so a rejected
   // write (RLS, a NOT NULL violation, ...) looked identical to a successful
   // upload — the file was on disk, but no `documents` row ever pointed to
-  // it, so it just never appeared on the page.
+  // it, so it just never appeared on the page. documents.organisation_id is
+  // itself NOT NULL on the real schema and was previously never set here at
+  // all — exactly the class of bug that comment describes, just still
+  // present until now (see supabase/migrations/0019_schema_drift_repair_2.sql).
   const { error } = await supabase.from("documents").insert({
+    organisation_id: ctx.profile!.organisation_id,
     project_id: projectId,
     title,
     category: String(formData.get("category") || "") || null,
