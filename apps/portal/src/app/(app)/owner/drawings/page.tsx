@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, StatusBadge } from "@buildhaus/ui";
+import { Card, StatusBadge, SubmitButton } from "@buildhaus/ui";
 import { Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -52,17 +52,17 @@ export default async function OwnerDrawings() {
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {d.status === "owner_review" && (
                     <form action={sendToClient.bind(null, d.id)}>
-                      <Button type="submit" variant="outline">Send to client</Button>
+                      <SubmitButton variant="outline">Send to client</SubmitButton>
                     </form>
                   )}
                   {d.status === "client_review" && (
                     <form action={approveDrawing.bind(null, d.id)}>
-                      <Button type="submit">Approve</Button>
+                      <SubmitButton>Approve</SubmitButton>
                     </form>
                   )}
                   {d.status === "approved" && (
                     <form action={approveForConstruction.bind(null, d.id)}>
-                      <Button type="submit">Approve for construction</Button>
+                      <SubmitButton pendingLabel="Approving…">Approve for construction</SubmitButton>
                     </form>
                   )}
                   {d.status === "approved_for_construction" && (
@@ -77,7 +77,7 @@ export default async function OwnerDrawings() {
                       <div className="flex-1">
                         <Textarea name="notes" placeholder="What needs to change?" className="min-h-[40px]" />
                       </div>
-                      <Button type="submit" variant="danger">Request revision</Button>
+                      <SubmitButton variant="danger">Request revision</SubmitButton>
                     </form>
                   )}
                 </div>

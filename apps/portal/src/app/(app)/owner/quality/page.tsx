@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge, StatCard } from "@buildhaus/ui";
+import { Card, Badge, StatCard, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select, Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -40,7 +40,7 @@ export default async function QualityPage() {
       {(projects ?? []).length > 0 && (
         <Card>
           <h2 className="mb-3 font-bold text-ivory">Log an inspection</h2>
-          <form action={createInspection} className="grid gap-x-4 sm:grid-cols-3">
+          <ActionForm action={createInspection} successMessage="Inspection logged." className="grid gap-x-4 sm:grid-cols-3">
             <Select label="Project" name="project_id">
               {(projects ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
             </Select>
@@ -49,8 +49,8 @@ export default async function QualityPage() {
               {(checklists ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
             <Input label="Notes" name="notes" placeholder="What was inspected?" />
-            <div className="sm:col-span-3"><Button type="submit">Log inspection</Button></div>
-          </form>
+            <div className="sm:col-span-3"><SubmitButton>Log inspection</SubmitButton></div>
+          </ActionForm>
         </Card>
       )}
 
@@ -73,16 +73,16 @@ export default async function QualityPage() {
                 <div className="mt-3 flex flex-wrap items-start gap-3 border-t border-border pt-3">
                   <form action={passInspection}>
                     <input type="hidden" name="id" value={i.id} />
-                    <Button type="submit">Pass</Button>
+                    <SubmitButton>Pass</SubmitButton>
                   </form>
                   <form action={failInspection} className="flex-1 min-w-[220px] space-y-2">
                     <input type="hidden" name="id" value={i.id} />
                     <Textarea name="notes" placeholder="What failed and what needs fixing?" className="min-h-[40px]" />
-                    <Button type="submit" variant="danger">Fail — needs correction</Button>
+                    <SubmitButton variant="danger">Fail — needs correction</SubmitButton>
                   </form>
                   <form action={closeInspection}>
                     <input type="hidden" name="id" value={i.id} />
-                    <Button type="submit" variant="outline">Close</Button>
+                    <SubmitButton variant="outline">Close</SubmitButton>
                   </form>
                 </div>
               </div>

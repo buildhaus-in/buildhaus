@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button } from "@buildhaus/ui";
+import { Card, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { Textarea } from "@buildhaus/ui";
 import { clsx } from "clsx";
@@ -74,10 +74,10 @@ export default async function ClientMessages() {
       </Card>
 
       <Card>
-        <form action={sendMessage} className="space-y-2">
+        <ActionForm action={sendMessage} successMessage="Message sent." className="space-y-2">
           <Textarea name="body" label="Send a message" placeholder="Type your message…" required />
-          <Button type="submit" variant="primary">Send</Button>
-        </form>
+          <SubmitButton variant="primary">Send</SubmitButton>
+        </ActionForm>
       </Card>
     </div>
   );

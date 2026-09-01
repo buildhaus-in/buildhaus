@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Badge, buttonClass, SubmitButton, ActionForm } from "@buildhaus/ui";
 import { Input, Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
@@ -46,7 +46,7 @@ export default async function LeadDetail({ params }: { params: { id: string } })
         <Card className="border-ok/30 bg-ok/5">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-sandlight">This lead was converted to a project.</span>
-            <Link href={`/owner/projects/${lead.converted_project_id}`}><Button variant="outline">Open project →</Button></Link>
+            <Link href={`/owner/projects/${lead.converted_project_id}`} className={buttonClass("outline")}>Open project →</Link>
           </div>
         </Card>
       )}
@@ -74,17 +74,17 @@ export default async function LeadDetail({ params }: { params: { id: string } })
             {lead.stage === "new_enquiry" && (
               <form action={markContacted}>
                 <input type="hidden" name="lead_id" value={lead.id} />
-                <Button type="submit" variant="outline">Mark as contacted</Button>
+                <SubmitButton variant="outline">Mark as contacted</SubmitButton>
               </form>
             )}
             <form action={convertToProject}>
               <input type="hidden" name="lead_id" value={lead.id} />
-              <Button type="submit">Convert to project</Button>
+              <SubmitButton pendingLabel="Converting…">Convert to project</SubmitButton>
             </form>
             <form action={markLost} className="flex items-center gap-2">
               <input type="hidden" name="lead_id" value={lead.id} />
               <input name="reason" placeholder="Reason (optional)" className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand" />
-              <Button type="submit" variant="danger">Mark lost</Button>
+              <SubmitButton variant="danger">Mark lost</SubmitButton>
             </form>
           </div>
         </Card>
@@ -93,12 +93,12 @@ export default async function LeadDetail({ params }: { params: { id: string } })
       {!isClosed && (
         <Card>
           <h2 className="mb-3 font-bold text-ivory">Schedule a site visit</h2>
-          <form action={scheduleSiteVisit} className="grid gap-x-4 sm:grid-cols-2">
+          <ActionForm action={scheduleSiteVisit} successMessage="Site visit scheduled." className="grid gap-x-4 sm:grid-cols-2">
             <input type="hidden" name="lead_id" value={lead.id} />
             <Input label="Visit date" name="scheduled_date" type="date" required />
             <Input label="Notes" name="notes" placeholder="Bring topo survey team" />
-            <div className="sm:col-span-2"><Button type="submit">Schedule visit</Button></div>
-          </form>
+            <div className="sm:col-span-2"><SubmitButton>Schedule visit</SubmitButton></div>
+          </ActionForm>
         </Card>
       )}
 
@@ -121,11 +121,11 @@ export default async function LeadDetail({ params }: { params: { id: string } })
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Add a note</h2>
-        <form action={addNote} className="space-y-2">
+        <ActionForm action={addNote} successMessage="Note added." className="space-y-2">
           <input type="hidden" name="lead_id" value={lead.id} />
           <Textarea name="note" placeholder="Call notes, requirements, objections…" required />
-          <Button type="submit">Add note</Button>
-        </form>
+          <SubmitButton>Add note</SubmitButton>
+        </ActionForm>
       </Card>
 
       <Card>

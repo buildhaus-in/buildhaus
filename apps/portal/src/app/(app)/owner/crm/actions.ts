@@ -1,7 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertOwner } from "@/lib/authz";
-import { throwIfError } from "@/lib/mutation";
+import { throwIfError, unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -11,13 +12,21 @@ function revalidateLead(id: string) {
   revalidatePath("/owner");
 }
 
-export async function createLead(formData: FormData) {
-  const ctx = await assertOwner();
+export async function createLead(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  let ctx;
+  try {
+    ctx = await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const customerName = String(formData.get("customer_name") || "").trim();
-  if (!customerName) return;
+  if (!customerName) return { ok: false, error: "Enter a customer name." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("leads").insert({
       organisation_id: ctx.profile!.organisation_id,
       customer_name: customerName,
@@ -37,22 +46,34 @@ export async function createLead(formData: FormData) {
     }),
     "Couldn't create the lead."
   );
+  if (!result.ok) return result;
 
   revalidatePath("/owner/crm");
+  return { ok: true, data: null };
 }
 
-export async function addNote(formData: FormData) {
-  await assertOwner();
+export async function addNote(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  try {
+    await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const leadId = String(formData.get("lead_id") || "");
   const note = String(formData.get("note") || "").trim();
-  if (!leadId || !note) return;
+  if (!leadId || !note) return { ok: false, error: "Enter a note." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("lead_activities").insert({ lead_id: leadId, type: "note", note }),
     "Couldn't add the note."
   );
+  if (!result.ok) return result;
+
   revalidateLead(leadId);
+  return { ok: true, data: null };
 }
 
 export async function markContacted(formData: FormData) {
@@ -72,29 +93,43 @@ export async function markContacted(formData: FormData) {
   revalidateLead(leadId);
 }
 
-export async function scheduleSiteVisit(formData: FormData) {
-  await assertOwner();
+export async function scheduleSiteVisit(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  try {
+    await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const leadId = String(formData.get("lead_id") || "");
   const scheduledDate = String(formData.get("scheduled_date") || "");
   const notes = String(formData.get("notes") || "");
-  if (!leadId || !scheduledDate) return;
+  if (!leadId || !scheduledDate) return { ok: false, error: "Choose a visit date." };
 
-  throwIfError(
+  let result = unwrap(
     await supabase.from("site_visits").insert({ lead_id: leadId, scheduled_date: scheduledDate, status: "scheduled", notes }),
     "Couldn't schedule the site visit."
   );
-  throwIfError(
+  if (!result.ok) return result;
+
+  result = unwrap(
     await supabase.from("leads").update({ stage: "site_visit_scheduled", follow_up_date: scheduledDate }).eq("id", leadId),
     "Couldn't update the lead."
   );
-  throwIfError(
+  if (!result.ok) return result;
+
+  result = unwrap(
     await supabase.from("lead_activities").insert({
       lead_id: leadId, type: "site_visit", note: `Site visit scheduled for ${scheduledDate}.${notes ? " " + notes : ""}`,
     }),
     "Couldn't add the note."
   );
+  if (!result.ok) return result;
+
   revalidateLead(leadId);
+  return { ok: true, data: null };
 }
 
 export async function markLost(formData: FormData) {

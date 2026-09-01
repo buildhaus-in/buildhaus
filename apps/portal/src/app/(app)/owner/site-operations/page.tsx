@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, StatusBadge, StatCard, Badge } from "@buildhaus/ui";
+import { Card, StatusBadge, StatCard, Badge, SubmitButton } from "@buildhaus/ui";
 import { Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -92,12 +92,12 @@ export default async function SiteOperations() {
                     <label className="flex items-center gap-1.5 text-xs text-muted">
                       <input type="checkbox" name="client_visible" defaultChecked={r.client_visible} /> Publish to client
                     </label>
-                    <Button type="submit" variant="primary">Approve</Button>
+                    <SubmitButton variant="primary">Approve</SubmitButton>
                   </form>
                   <form action={returnReport} className="flex-1 min-w-[240px] space-y-2">
                     <input type="hidden" name="id" value={r.id} />
                     <Textarea name="reason" placeholder="What needs fixing before this can be approved?" />
-                    <Button type="submit" variant="danger">Return</Button>
+                    <SubmitButton variant="danger">Return</SubmitButton>
                   </form>
                 </div>
               </div>

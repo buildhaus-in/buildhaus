@@ -1,7 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertOwner } from "@/lib/authz";
-import { throwIfError } from "@/lib/mutation";
+import { throwIfError, unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 
 // NOTE: apps/website reads website_pages/website_sections/testimonials/faqs
@@ -12,19 +13,32 @@ function revalidateWebsiteAdmin() {
   revalidatePath("/owner/website");
 }
 
+async function requireOwner(): Promise<ActionResult<null> | null> {
+  try {
+    await assertOwner();
+    return null;
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
+}
+
 /* Testimonials -------------------------------------------------------------- */
 
-export async function createTestimonial(formData: FormData) {
-  await assertOwner();
+export async function createTestimonial(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  const authError = await requireOwner();
+  if (authError) return authError;
   const supabase = createClient();
   const clientName = String(formData.get("client_name") || "").trim();
   const quote = String(formData.get("quote") || "").trim();
-  if (!clientName || !quote) return;
+  if (!clientName || !quote) return { ok: false, error: "Enter a client name and quote." };
 
   const rating = Math.min(5, Math.max(1, Number(formData.get("rating") || 5)));
   const projectId = String(formData.get("project_id") || "").trim() || null;
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("testimonials").insert({
       client_name: clientName,
       project_id: projectId,
@@ -35,19 +49,25 @@ export async function createTestimonial(formData: FormData) {
     }),
     "Couldn't create the testimonial."
   );
+  if (!result.ok) return result;
 
   revalidateWebsiteAdmin();
+  return { ok: true, data: null };
 }
 
-export async function updateTestimonial(formData: FormData) {
-  await assertOwner();
+export async function updateTestimonial(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  const authError = await requireOwner();
+  if (authError) return authError;
   const supabase = createClient();
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return { ok: false, error: "Missing testimonial id." };
 
   const rating = Math.min(5, Math.max(1, Number(formData.get("rating") || 5)));
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("testimonials").update({
       client_name: String(formData.get("client_name") || "").trim(),
       quote: String(formData.get("quote") || "").trim(),
@@ -56,8 +76,10 @@ export async function updateTestimonial(formData: FormData) {
     }).eq("id", id),
     "Couldn't save the testimonial."
   );
+  if (!result.ok) return result;
 
   revalidateWebsiteAdmin();
+  return { ok: true, data: null };
 }
 
 export async function toggleTestimonialPublish(formData: FormData) {
@@ -76,14 +98,18 @@ export async function toggleTestimonialPublish(formData: FormData) {
 
 /* FAQs ------------------------------------------------------------------------ */
 
-export async function createFaq(formData: FormData) {
-  await assertOwner();
+export async function createFaq(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  const authError = await requireOwner();
+  if (authError) return authError;
   const supabase = createClient();
   const question = String(formData.get("question") || "").trim();
   const answer = String(formData.get("answer") || "").trim();
-  if (!question || !answer) return;
+  if (!question || !answer) return { ok: false, error: "Enter a question and answer." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("faqs").insert({
       category: String(formData.get("category") || "General").trim() || "General",
       question,
@@ -93,17 +119,23 @@ export async function createFaq(formData: FormData) {
     }),
     "Couldn't create the FAQ."
   );
+  if (!result.ok) return result;
 
   revalidateWebsiteAdmin();
+  return { ok: true, data: null };
 }
 
-export async function updateFaq(formData: FormData) {
-  await assertOwner();
+export async function updateFaq(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  const authError = await requireOwner();
+  if (authError) return authError;
   const supabase = createClient();
   const id = String(formData.get("id") || "");
-  if (!id) return;
+  if (!id) return { ok: false, error: "Missing FAQ id." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("faqs").update({
       category: String(formData.get("category") || "General").trim() || "General",
       question: String(formData.get("question") || "").trim(),
@@ -112,8 +144,10 @@ export async function updateFaq(formData: FormData) {
     }).eq("id", id),
     "Couldn't save the FAQ."
   );
+  if (!result.ok) return result;
 
   revalidateWebsiteAdmin();
+  return { ok: true, data: null };
 }
 
 export async function toggleFaqPublish(formData: FormData) {
@@ -132,13 +166,17 @@ export async function toggleFaqPublish(formData: FormData) {
 
 /* Pages & sections -------------------------------------------------------- */
 
-export async function updatePageMeta(formData: FormData) {
-  await assertOwner();
+export async function updatePageMeta(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  const authError = await requireOwner();
+  if (authError) return authError;
   const supabase = createClient();
   const slug = String(formData.get("slug") || "");
-  if (!slug) return;
+  if (!slug) return { ok: false, error: "Missing page slug." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("website_pages").update({
       title: String(formData.get("title") || "").trim(),
       seo_title: String(formData.get("seo_title") || "").trim() || null,
@@ -146,9 +184,11 @@ export async function updatePageMeta(formData: FormData) {
     }).eq("slug", slug),
     "Couldn't save the page details."
   );
+  if (!result.ok) return result;
 
   revalidatePath("/owner/website");
   revalidatePath(`/owner/website/pages/${slug}`);
+  return { ok: true, data: null };
 }
 
 export async function togglePagePublish(formData: FormData) {
@@ -166,23 +206,29 @@ export async function togglePagePublish(formData: FormData) {
   revalidatePath(`/owner/website/pages/${slug}`);
 }
 
-export async function updateSection(formData: FormData) {
-  await assertOwner();
+export async function updateSection(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  const authError = await requireOwner();
+  if (authError) return authError;
   const supabase = createClient();
   const id = String(formData.get("id") || "");
   const pageSlug = String(formData.get("page_slug") || "");
-  if (!id) return;
+  if (!id) return { ok: false, error: "Missing section id." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("website_sections").update({
       heading: String(formData.get("heading") || "").trim() || null,
       body: String(formData.get("body") || "").trim() || null,
     }).eq("id", id),
     "Couldn't save the section."
   );
+  if (!result.ok) return result;
 
   revalidatePath("/owner/website");
   if (pageSlug) revalidatePath(`/owner/website/pages/${pageSlug}`);
+  return { ok: true, data: null };
 }
 
 export async function toggleSectionPublish(formData: FormData) {

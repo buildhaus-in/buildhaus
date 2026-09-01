@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge, StatCard } from "@buildhaus/ui";
+import { Card, Badge, StatCard, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
@@ -66,7 +66,7 @@ export default async function FinancePage() {
         {(projects ?? []).length === 0 ? (
           <div className="text-sm text-muted">No projects yet.</div>
         ) : (
-          <form action={recordReceipt} className="grid gap-x-4 sm:grid-cols-4">
+          <ActionForm action={recordReceipt} successMessage="Receipt recorded." className="grid gap-x-4 sm:grid-cols-4">
             <Select label="Project" name="project_id">
               {(projects ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
             </Select>
@@ -77,8 +77,8 @@ export default async function FinancePage() {
               <option value="cash">Cash</option>
               <option value="upi">UPI</option>
             </Select>
-            <div className="flex items-end"><Button type="submit">Record receipt</Button></div>
-          </form>
+            <div className="flex items-end"><SubmitButton>Record receipt</SubmitButton></div>
+          </ActionForm>
         )}
       </Card>
 
@@ -103,13 +103,13 @@ export default async function FinancePage() {
                     <span className="text-sm text-sand">{inr(s.amount)}</span>
                     <Badge tone={overdue ? "danger" : (SCHEDULE_TONE[s.status] ?? "muted")}>{overdue ? "overdue" : s.status}</Badge>
                     {s.status !== "paid" && (
-                      <form action={recordReceipt}>
+                      <ActionForm action={recordReceipt} successMessage="Marked received.">
                         <input type="hidden" name="project_id" value={s.project_id} />
                         <input type="hidden" name="schedule_id" value={s.id} />
                         <input type="hidden" name="amount" value={s.amount} />
                         <input type="hidden" name="mode" value="bank_transfer" />
-                        <Button type="submit" variant="outline">Mark received</Button>
-                      </form>
+                        <SubmitButton variant="outline">Mark received</SubmitButton>
+                      </ActionForm>
                     )}
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export default async function FinancePage() {
                   <span className="font-semibold text-danger">{inr(b.outstanding)}</span>
                   <form action={markSupplierBillPaid}>
                     <input type="hidden" name="bill_id" value={b.id} />
-                    <Button type="submit" variant="outline">Mark paid</Button>
+                    <SubmitButton variant="outline">Mark paid</SubmitButton>
                   </form>
                 </div>
               </div>
@@ -199,7 +199,7 @@ export default async function FinancePage() {
                   <span className="font-semibold text-danger">{inr(b.outstanding)}</span>
                   <form action={markContractorBillPaid}>
                     <input type="hidden" name="bill_id" value={b.id} />
-                    <Button type="submit" variant="outline">Mark paid</Button>
+                    <SubmitButton variant="outline">Mark paid</SubmitButton>
                   </form>
                 </div>
               </div>
@@ -210,7 +210,7 @@ export default async function FinancePage() {
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Expenses</h2>
-        <form action={recordExpense} className="mb-4 grid gap-x-4 sm:grid-cols-4">
+        <ActionForm action={recordExpense} successMessage="Expense recorded." className="mb-4 grid gap-x-4 sm:grid-cols-4">
           <Select label="Project" name="project_id" defaultValue="">
             <option value="">— General —</option>
             {(projects ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
@@ -218,8 +218,8 @@ export default async function FinancePage() {
           <Input label="Category" name="category" placeholder="site_transport" />
           <Input label="Amount (₹)" name="amount" type="number" required />
           <Input label="Notes" name="notes" placeholder="Optional" />
-          <div className="sm:col-span-4"><Button type="submit" variant="outline">Add expense</Button></div>
-        </form>
+          <div className="sm:col-span-4"><SubmitButton variant="outline">Add expense</SubmitButton></div>
+        </ActionForm>
         {(!expenses || expenses.length === 0) ? (
           <div className="text-sm text-muted">No expenses recorded yet.</div>
         ) : (

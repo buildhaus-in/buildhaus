@@ -1,5 +1,5 @@
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Badge, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -27,15 +27,15 @@ export default async function SuppliersPage() {
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Add a supplier</h2>
-        <form action={createSupplier} className="grid gap-x-4 sm:grid-cols-4">
+        <ActionForm action={createSupplier} successMessage="Supplier added." className="grid gap-x-4 sm:grid-cols-4">
           <Input label="Business name" name="name" placeholder="Sri Lakshmi Steel Traders" required />
           <Select label="Category" name="category" defaultValue="steel">
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </Select>
           <Input label="Contact person" name="contact_person" placeholder="Rajesh" />
           <Input label="Mobile" name="mobile" placeholder="+91 90000 00000" />
-          <div className="sm:col-span-4"><Button type="submit">Add supplier</Button></div>
-        </form>
+          <div className="sm:col-span-4"><SubmitButton>Add supplier</SubmitButton></div>
+        </ActionForm>
       </Card>
 
       {supplierList.length === 0 ? (
@@ -61,7 +61,7 @@ export default async function SuppliersPage() {
         {supplierList.length === 0 ? (
           <div className="text-sm text-muted">Add a supplier first.</div>
         ) : (
-          <form action={raisePurchase} className="grid gap-x-4 sm:grid-cols-3">
+          <ActionForm action={raisePurchase} successMessage="Purchase raised." className="grid gap-x-4 sm:grid-cols-3">
             <Select label="Supplier" name="supplier_id">
               {supplierList.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
@@ -73,8 +73,8 @@ export default async function SuppliersPage() {
             <Input label="Quantity" name="quantity" type="number" />
             <Input label="Unit" name="unit" placeholder="kg / bag / no" />
             <Input label="Notes" name="notes" placeholder="Optional" />
-            <div className="sm:col-span-3"><Button type="submit">Raise purchase</Button></div>
-          </form>
+            <div className="sm:col-span-3"><SubmitButton>Raise purchase</SubmitButton></div>
+          </ActionForm>
         )}
       </Card>
 

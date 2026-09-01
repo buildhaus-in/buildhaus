@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Badge, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -42,9 +42,9 @@ export default async function WebsitePageDetail({ params }: { params: { slug: st
           <form action={togglePagePublish}>
             <input type="hidden" name="slug" value={page.slug} />
             <input type="hidden" name="is_published" value={String(!page.is_published)} />
-            <Button type="submit" variant={page.is_published ? "outline" : "primary"}>
+            <SubmitButton variant={page.is_published ? "outline" : "primary"}>
               {page.is_published ? "Unpublish page" : "Publish page"}
-            </Button>
+            </SubmitButton>
           </form>
         </div>
         <p className="text-xs text-muted">
@@ -56,13 +56,13 @@ export default async function WebsitePageDetail({ params }: { params: { slug: st
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">SEO</h2>
-        <form action={updatePageMeta} className="grid gap-x-4 sm:grid-cols-2">
+        <ActionForm action={updatePageMeta} successMessage="SEO details saved." resetOnSuccess={false} className="grid gap-x-4 sm:grid-cols-2">
           <input type="hidden" name="slug" value={page.slug} />
           <Input label="Page title" name="title" defaultValue={page.title} />
           <Input label="SEO title" name="seo_title" defaultValue={page.seo_title ?? ""} />
           <div className="sm:col-span-2"><Textarea label="Meta description" name="meta_description" defaultValue={page.meta_description ?? ""} /></div>
-          <div className="sm:col-span-2"><Button type="submit">Save SEO details</Button></div>
-        </form>
+          <div className="sm:col-span-2"><SubmitButton>Save SEO details</SubmitButton></div>
+        </ActionForm>
       </Card>
 
       <div>
@@ -81,17 +81,17 @@ export default async function WebsitePageDetail({ params }: { params: { slug: st
                       <input type="hidden" name="id" value={s.id} />
                       <input type="hidden" name="page_slug" value={page.slug} />
                       <input type="hidden" name="is_published" value={String(!s.is_published)} />
-                      <Button type="submit" variant="outline">{s.is_published ? "Unpublish" : "Publish"}</Button>
+                      <SubmitButton variant="outline">{s.is_published ? "Unpublish" : "Publish"}</SubmitButton>
                     </form>
                   </div>
                 </div>
-                <form action={updateSection} className="space-y-3">
+                <ActionForm action={updateSection} successMessage="Section saved." resetOnSuccess={false} className="space-y-3">
                   <input type="hidden" name="id" value={s.id} />
                   <input type="hidden" name="page_slug" value={page.slug} />
                   <Input label="Heading" name="heading" defaultValue={s.heading ?? ""} />
                   <Textarea label="Body text" name="body" defaultValue={s.body ?? ""} />
-                  <Button type="submit" variant="outline">Save section</Button>
-                </form>
+                  <SubmitButton variant="outline">Save section</SubmitButton>
+                </ActionForm>
               </Card>
             ))}
           </div>

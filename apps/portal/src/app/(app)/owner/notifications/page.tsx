@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button, Badge } from "@buildhaus/ui";
+import { Card, Badge, SubmitButton } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
 import { markRead, markAllRead } from "./actions";
@@ -28,7 +28,7 @@ export default async function NotificationsPage() {
         </div>
         {unreadCount > 0 && (
           <form action={markAllRead}>
-            <Button type="submit" variant="outline">Mark all read</Button>
+            <SubmitButton variant="outline">Mark all read</SubmitButton>
           </form>
         )}
       </div>
@@ -54,7 +54,7 @@ export default async function NotificationsPage() {
                 {!n.read && (
                   <form action={markRead}>
                     <input type="hidden" name="id" value={n.id} />
-                    <Button type="submit" variant="ghost" className="shrink-0 text-xs">Mark read</Button>
+                    <SubmitButton variant="ghost" className="shrink-0 text-xs">Mark read</SubmitButton>
                   </form>
                 )}
                 {n.read && <Badge tone="muted">read</Badge>}

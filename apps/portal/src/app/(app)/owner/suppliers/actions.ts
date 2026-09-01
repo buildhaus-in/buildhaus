@@ -1,16 +1,25 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertOwner } from "@/lib/authz";
-import { throwIfError } from "@/lib/mutation";
+import { unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 
-export async function createSupplier(formData: FormData) {
-  const ctx = await assertOwner();
+export async function createSupplier(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  let ctx;
+  try {
+    ctx = await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const name = String(formData.get("name") || "").trim();
-  if (!name) return;
+  if (!name) return { ok: false, error: "Enter a business name." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("suppliers").insert({
       organisation_id: ctx.profile!.organisation_id,
       name,
@@ -20,21 +29,31 @@ export async function createSupplier(formData: FormData) {
     }),
     "Couldn't create the supplier."
   );
+  if (!result.ok) return result;
+
   revalidatePath("/owner/suppliers");
+  return { ok: true, data: null };
 }
 
 // A simple, single-line "raise a purchase" MVP — not the full multi-item
 // purchase-order workflow in the real schema, just enough to record intent
 // against a supplier for a project.
-export async function raisePurchase(formData: FormData) {
-  await assertOwner();
+export async function raisePurchase(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  try {
+    await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const supplierId = String(formData.get("supplier_id") || "");
   const projectId = String(formData.get("project_id") || "") || null;
   const materialName = String(formData.get("material_name") || "").trim();
-  if (!supplierId || !materialName) return;
+  if (!supplierId || !materialName) return { ok: false, error: "Select a supplier and enter a material." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("purchases").insert({
       supplier_id: supplierId,
       project_id: projectId,
@@ -47,5 +66,8 @@ export async function raisePurchase(formData: FormData) {
     }),
     "Couldn't raise the purchase."
   );
+  if (!result.ok) return result;
+
   revalidatePath("/owner/suppliers");
+  return { ok: true, data: null };
 }

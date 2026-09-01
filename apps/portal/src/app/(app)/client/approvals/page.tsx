@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Badge, Button } from "@buildhaus/ui";
+import { Card, Badge, SubmitButton } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { Textarea } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -101,12 +101,12 @@ export default async function ClientApprovals() {
                   <div className="mt-4 flex flex-wrap items-start gap-3 border-t border-border pt-4">
                     <form action={approveApproval}>
                       <input type="hidden" name="id" value={a.id} />
-                      <Button type="submit" variant="primary">Approve</Button>
+                      <SubmitButton variant="primary">Approve</SubmitButton>
                     </form>
                     <form action={rejectApproval} className="flex-1 min-w-[220px] space-y-2">
                       <input type="hidden" name="id" value={a.id} />
                       <Textarea name="reason" label="Reason (required to reject)" placeholder="Tell us what needs to change…" />
-                      <Button type="submit" variant="danger">Reject</Button>
+                      <SubmitButton variant="danger">Reject</SubmitButton>
                     </form>
                   </div>
                 )}

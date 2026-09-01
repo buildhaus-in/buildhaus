@@ -1,7 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertOwner } from "@/lib/authz";
-import { throwIfError } from "@/lib/mutation";
+import { throwIfError, unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 
 function revalidateAll() {
@@ -14,17 +15,25 @@ function revalidateAll() {
 // Records a receipt against a project (optionally against a specific
 // schedule milestone, which is then marked paid) and logs it in the unified
 // `payments` ledger so the Command Centre cash position stays accurate.
-export async function recordReceipt(formData: FormData) {
-  const ctx = await assertOwner();
+export async function recordReceipt(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  let ctx;
+  try {
+    ctx = await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const projectId = String(formData.get("project_id") || "");
   const scheduleId = String(formData.get("schedule_id") || "");
   const amount = Number(formData.get("amount") || 0);
   const mode = String(formData.get("mode") || "bank_transfer");
-  if (!projectId || !amount) return;
+  if (!projectId || !amount) return { ok: false, error: "Select a project and enter an amount." };
 
   const receiptNo = `BH-RCPT-${Date.now().toString().slice(-6)}`;
-  throwIfError(
+  let result = unwrap(
     await supabase.from("client_receipts").insert({
       project_id: projectId,
       amount,
@@ -34,8 +43,9 @@ export async function recordReceipt(formData: FormData) {
     }),
     "Couldn't record the receipt."
   );
+  if (!result.ok) return result;
 
-  throwIfError(
+  result = unwrap(
     await supabase.from("payments").insert({
       project_id: projectId,
       direction: "inbound",
@@ -46,15 +56,18 @@ export async function recordReceipt(formData: FormData) {
     }),
     "Couldn't log the payment."
   );
+  if (!result.ok) return result;
 
   if (scheduleId) {
-    throwIfError(
+    result = unwrap(
       await supabase.from("client_payment_schedules").update({ status: "paid" }).eq("id", scheduleId),
       "Couldn't mark the milestone as paid."
     );
+    if (!result.ok) return result;
   }
 
   revalidateAll();
+  return { ok: true, data: null };
 }
 
 export async function markSupplierBillPaid(formData: FormData) {
@@ -116,14 +129,22 @@ export async function markContractorBillPaid(formData: FormData) {
   revalidatePath("/owner");
 }
 
-export async function recordExpense(formData: FormData) {
-  const ctx = await assertOwner();
+export async function recordExpense(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  let ctx;
+  try {
+    ctx = await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const projectId = String(formData.get("project_id") || "") || null;
   const amount = Number(formData.get("amount") || 0);
-  if (!amount) return;
+  if (!amount) return { ok: false, error: "Enter an amount." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("expenses").insert({
       organisation_id: ctx.profile!.organisation_id,
       project_id: projectId,
@@ -134,6 +155,8 @@ export async function recordExpense(formData: FormData) {
     }),
     "Couldn't record the expense."
   );
+  if (!result.ok) return result;
 
   revalidatePath("/owner/finance");
+  return { ok: true, data: null };
 }

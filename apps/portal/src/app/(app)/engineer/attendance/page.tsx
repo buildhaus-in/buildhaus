@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button } from "@buildhaus/ui";
+import { Card, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -40,7 +40,7 @@ export default async function EngineerAttendance() {
         {projects.length === 0 ? (
           <div className="text-sm text-muted">You aren&apos;t assigned to any projects yet.</div>
         ) : (
-          <form action={logAttendance} className="grid gap-x-4 sm:grid-cols-4">
+          <ActionForm action={logAttendance} successMessage="Attendance logged." className="grid gap-x-4 sm:grid-cols-4">
             <Select label="Project" name="project_id" defaultValue={projects[0].id}>
               {projects.map((p: any) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
             </Select>
@@ -50,9 +50,9 @@ export default async function EngineerAttendance() {
             <Input label="Present count" name="present_count" type="number" min={1} />
             <input type="hidden" name="attendance_date" value={today} />
             <div className="flex items-end">
-              <Button type="submit" className="w-full">Log for today</Button>
+              <SubmitButton className="w-full">Log for today</SubmitButton>
             </div>
-          </form>
+          </ActionForm>
         )}
       </Card>
 

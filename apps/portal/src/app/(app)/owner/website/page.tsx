@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge, buttonClass } from "@buildhaus/ui";
+import { Card, Badge, buttonClass, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Textarea, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -102,7 +102,7 @@ export default async function WebsiteContentPage({
         <>
           <Card>
             <h2 className="mb-3 font-bold text-ivory">Add a testimonial</h2>
-            <form action={createTestimonial} className="grid gap-x-4 sm:grid-cols-2">
+            <ActionForm action={createTestimonial} successMessage="Testimonial added." className="grid gap-x-4 sm:grid-cols-2">
               <Input label="Client name" name="client_name" placeholder="Sunil Reddy" required />
               <Select label="Project (optional)" name="project_id" defaultValue="">
                 <option value="">No project linked</option>
@@ -111,8 +111,8 @@ export default async function WebsiteContentPage({
               <div className="sm:col-span-2"><Textarea label="Quote" name="quote" placeholder="What the client said..." required /></div>
               <Input label="Rating (1-5)" name="rating" type="number" min={1} max={5} defaultValue={5} />
               <Input label="Display order" name="display_order" type="number" defaultValue={testimonialList.length + 1} />
-              <div className="sm:col-span-2"><Button type="submit">Add testimonial</Button></div>
-            </form>
+              <div className="sm:col-span-2"><SubmitButton>Add testimonial</SubmitButton></div>
+            </ActionForm>
           </Card>
 
           {testimonialList.length === 0 ? (
@@ -131,18 +131,18 @@ export default async function WebsiteContentPage({
                       <form action={toggleTestimonialPublish}>
                         <input type="hidden" name="id" value={t.id} />
                         <input type="hidden" name="is_published" value={String(!t.is_published)} />
-                        <Button type="submit" variant="outline">{t.is_published ? "Unpublish" : "Publish"}</Button>
+                        <SubmitButton variant="outline">{t.is_published ? "Unpublish" : "Publish"}</SubmitButton>
                       </form>
                     </div>
                   </div>
-                  <form action={updateTestimonial} className="grid gap-x-4 sm:grid-cols-4">
+                  <ActionForm action={updateTestimonial} successMessage="Saved." resetOnSuccess={false} className="grid gap-x-4 sm:grid-cols-4">
                     <input type="hidden" name="id" value={t.id} />
                     <Input label="Client name" name="client_name" defaultValue={t.client_name} className="sm:col-span-2" />
                     <Input label="Rating (1-5)" name="rating" type="number" min={1} max={5} defaultValue={t.rating} />
                     <Input label="Display order" name="display_order" type="number" defaultValue={t.display_order} />
                     <div className="sm:col-span-4"><Textarea label="Quote" name="quote" defaultValue={t.quote} /></div>
-                    <div className="sm:col-span-4"><Button type="submit" variant="outline">Save</Button></div>
-                  </form>
+                    <div className="sm:col-span-4"><SubmitButton variant="outline">Save</SubmitButton></div>
+                  </ActionForm>
                 </Card>
               ))}
             </div>
@@ -154,13 +154,13 @@ export default async function WebsiteContentPage({
         <>
           <Card>
             <h2 className="mb-3 font-bold text-ivory">Add an FAQ</h2>
-            <form action={createFaq} className="grid gap-x-4 sm:grid-cols-2">
+            <ActionForm action={createFaq} successMessage="FAQ added." className="grid gap-x-4 sm:grid-cols-2">
               <Input label="Category" name="category" placeholder="Cost & Payments" required />
               <Input label="Display order" name="display_order" type="number" defaultValue={1} />
               <div className="sm:col-span-2"><Input label="Question" name="question" placeholder="How is the cost per sqft calculated?" required /></div>
               <div className="sm:col-span-2"><Textarea label="Answer" name="answer" placeholder="Answer shown to visitors..." required /></div>
-              <div className="sm:col-span-2"><Button type="submit">Add FAQ</Button></div>
-            </form>
+              <div className="sm:col-span-2"><SubmitButton>Add FAQ</SubmitButton></div>
+            </ActionForm>
           </Card>
 
           {faqList.length === 0 ? (
@@ -177,17 +177,17 @@ export default async function WebsiteContentPage({
                         <form action={toggleFaqPublish}>
                           <input type="hidden" name="id" value={f.id} />
                           <input type="hidden" name="is_published" value={String(!f.is_published)} />
-                          <Button type="submit" variant="outline">{f.is_published ? "Unpublish" : "Publish"}</Button>
+                          <SubmitButton variant="outline">{f.is_published ? "Unpublish" : "Publish"}</SubmitButton>
                         </form>
                       </div>
-                      <form action={updateFaq} className="grid gap-x-4 sm:grid-cols-4">
+                      <ActionForm action={updateFaq} successMessage="Saved." resetOnSuccess={false} className="grid gap-x-4 sm:grid-cols-4">
                         <input type="hidden" name="id" value={f.id} />
                         <div className="sm:col-span-3"><Input label="Question" name="question" defaultValue={f.question} /></div>
                         <Input label="Display order" name="display_order" type="number" defaultValue={f.display_order} />
                         <div className="sm:col-span-4"><Textarea label="Answer" name="answer" defaultValue={f.answer} /></div>
                         <Input label="Category" name="category" defaultValue={f.category} className="sm:col-span-2" />
-                        <div className="sm:col-span-2 flex items-end"><Button type="submit" variant="outline">Save</Button></div>
-                      </form>
+                        <div className="sm:col-span-2 flex items-end"><SubmitButton variant="outline">Save</SubmitButton></div>
+                      </ActionForm>
                     </div>
                   ))}
                 </div>

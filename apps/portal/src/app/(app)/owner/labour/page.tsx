@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge, StatCard } from "@buildhaus/ui";
-import { Input, Select } from "@buildhaus/ui";
+import { Card, Badge, StatCard, buttonClass } from "@buildhaus/ui";
+import { Input, Select, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
 import { createContractor, recordAttendance } from "./actions";
@@ -29,7 +29,7 @@ export default async function LabourPage() {
           <h1 className="text-xl font-bold text-ivory">Labour &amp; Subcontractors</h1>
           <p className="text-sm text-muted">Daily attendance across sites and contractor bills.</p>
         </div>
-        <Link href="/owner/finance"><Button variant="outline">Pay bills in Finance →</Button></Link>
+        <Link href="/owner/finance" className={buttonClass("outline")}>Pay bills in Finance →</Link>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -40,17 +40,17 @@ export default async function LabourPage() {
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Add a contractor</h2>
-        <form action={createContractor} className="grid gap-x-4 sm:grid-cols-3">
+        <ActionForm action={createContractor} successMessage="Contractor added." className="grid gap-x-4 sm:grid-cols-3">
           <Input label="Name" name="name" placeholder="Ravindra Labour Co." required />
           <Input label="Mobile" name="mobile" placeholder="+91 90000 00000" />
-          <div className="flex items-end"><Button type="submit">Add contractor</Button></div>
-        </form>
+          <div className="flex items-end"><SubmitButton>Add contractor</SubmitButton></div>
+        </ActionForm>
       </Card>
 
       {(contractors ?? []).length > 0 && (projects ?? []).length > 0 && (
         <Card>
           <h2 className="mb-3 font-bold text-ivory">Record today&apos;s attendance</h2>
-          <form action={recordAttendance} className="grid gap-x-4 sm:grid-cols-4">
+          <ActionForm action={recordAttendance} successMessage="Attendance recorded." className="grid gap-x-4 sm:grid-cols-4">
             <Select label="Project" name="project_id">
               {(projects ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}
             </Select>
@@ -59,8 +59,8 @@ export default async function LabourPage() {
             </Select>
             <Input label="Trade" name="trade" placeholder="Mason / Mixed" defaultValue="Mixed" />
             <Input label="Present count" name="present_count" type="number" required />
-            <div className="sm:col-span-4"><Button type="submit">Record attendance</Button></div>
-          </form>
+            <div className="sm:col-span-4"><SubmitButton>Record attendance</SubmitButton></div>
+          </ActionForm>
         </Card>
       )}
 

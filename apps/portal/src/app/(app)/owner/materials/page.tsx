@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge, StatCard } from "@buildhaus/ui";
+import { Card, Badge, StatCard, buttonClass, SubmitButton } from "@buildhaus/ui";
 import { Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
@@ -45,18 +45,18 @@ export default async function MaterialsPage() {
           {action === "approve" ? (
             <form action={approveMaterialRequest}>
               <input type="hidden" name="id" value={r.id} />
-              <Button type="submit">Approve</Button>
+              <SubmitButton>Approve</SubmitButton>
             </form>
           ) : (
             <form action={fulfillMaterialRequest}>
               <input type="hidden" name="id" value={r.id} />
-              <Button type="submit">Mark fulfilled</Button>
+              <SubmitButton>Mark fulfilled</SubmitButton>
             </form>
           )}
           <form action={rejectMaterialRequest} className="flex-1 min-w-[220px] space-y-2">
             <input type="hidden" name="id" value={r.id} />
             <Textarea name="owner_notes" placeholder="Reason for rejecting (optional)" className="min-h-[40px]" />
-            <Button type="submit" variant="danger">Reject</Button>
+            <SubmitButton variant="danger" pendingLabel="Rejecting…">Reject</SubmitButton>
           </form>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default async function MaterialsPage() {
           <h1 className="text-xl font-bold text-ivory">Materials &amp; Procurement</h1>
           <p className="text-sm text-muted">Review site material requests and track them through to fulfilment.</p>
         </div>
-        <Link href="/owner/suppliers"><Button variant="outline">Suppliers →</Button></Link>
+        <Link href="/owner/suppliers" className={buttonClass("outline")}>Suppliers →</Link>
       </div>
 
       <div className="flex flex-wrap gap-3">

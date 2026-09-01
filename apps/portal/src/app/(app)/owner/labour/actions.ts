@@ -1,16 +1,25 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertOwner } from "@/lib/authz";
-import { throwIfError } from "@/lib/mutation";
+import { unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 
-export async function createContractor(formData: FormData) {
-  const ctx = await assertOwner();
+export async function createContractor(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  let ctx;
+  try {
+    ctx = await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const name = String(formData.get("name") || "").trim();
-  if (!name) return;
+  if (!name) return { ok: false, error: "Enter a contractor name." };
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("labour_contractors").insert({
       organisation_id: ctx.profile!.organisation_id,
       name,
@@ -18,18 +27,30 @@ export async function createContractor(formData: FormData) {
     }),
     "Couldn't create the contractor."
   );
+  if (!result.ok) return result;
+
   revalidatePath("/owner/labour");
+  return { ok: true, data: null };
 }
 
-export async function recordAttendance(formData: FormData) {
-  await assertOwner();
+export async function recordAttendance(
+  _prevState: ActionResult<null> | null,
+  formData: FormData
+): Promise<ActionResult<null>> {
+  try {
+    await assertOwner();
+  } catch {
+    return { ok: false, error: "You must be signed in as the Owner." };
+  }
   const supabase = createClient();
   const projectId = String(formData.get("project_id") || "");
   const contractorId = String(formData.get("contractor_id") || "");
   const presentCount = Number(formData.get("present_count") || 0);
-  if (!projectId || !contractorId || !presentCount) return;
+  if (!projectId || !contractorId || !presentCount) {
+    return { ok: false, error: "Select a project, contractor and present count." };
+  }
 
-  throwIfError(
+  const result = unwrap(
     await supabase.from("labour_attendance").insert({
       project_id: projectId,
       contractor_id: contractorId,
@@ -39,6 +60,9 @@ export async function recordAttendance(formData: FormData) {
     }),
     "Couldn't record attendance."
   );
+  if (!result.ok) return result;
+
   revalidatePath("/owner/labour");
   revalidatePath("/owner");
+  return { ok: true, data: null };
 }

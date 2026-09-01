@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
-import { Card, Button, Badge, StatCard } from "@buildhaus/ui";
+import { Card, Button, Badge, StatCard, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
@@ -53,7 +53,7 @@ export default async function CrmPage({
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Add a lead</h2>
-        <form action={createLead} className="grid gap-x-4 sm:grid-cols-3">
+        <ActionForm action={createLead} successMessage="Lead added." className="grid gap-x-4 sm:grid-cols-3">
           <Input label="Customer name" name="customer_name" placeholder="Ramesh Kumar" required />
           <Input label="Mobile" name="mobile" placeholder="+91 90000 00000" />
           <Input label="Email" name="email" type="email" placeholder="optional" />
@@ -66,8 +66,8 @@ export default async function CrmPage({
           <Input label="Floors" name="floors" type="number" />
           <Input label="Estimated value (₹)" name="estimated_value" type="number" />
           <Input label="Follow-up date" name="follow_up_date" type="date" />
-          <div className="sm:col-span-3"><Button type="submit">Add lead</Button></div>
-        </form>
+          <div className="sm:col-span-3"><SubmitButton>Add lead</SubmitButton></div>
+        </ActionForm>
       </Card>
 
       <Card>

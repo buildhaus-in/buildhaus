@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Button, Badge, StatusBadge, FileUpload } from "@buildhaus/ui";
+import { Card, Button, Badge, StatusBadge, FileUpload, buttonClass, SubmitButton } from "@buildhaus/ui";
 import { Input, Textarea, Select } from "@buildhaus/ui";
 import { EmptyState, ErrorState } from "@buildhaus/ui";
 import { dateLabel, STANDARD_STAGES } from "@buildhaus/utils";
@@ -179,9 +179,9 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
           </Card>
 
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" formAction={saveDraftReport} variant="outline">Save draft</Button>
-            <Button type="submit" formAction={submitReport}>Submit to Owner</Button>
-            <Link href="/engineer"><Button type="button" variant="ghost">Cancel</Button></Link>
+            <SubmitButton formAction={saveDraftReport} variant="outline" pendingLabel="Saving…">Save draft</SubmitButton>
+            <SubmitButton formAction={submitReport} pendingLabel="Submitting…">Submit to Owner</SubmitButton>
+            <Link href="/engineer" className={buttonClass("ghost")}>Cancel</Link>
           </div>
         </form>
       )}

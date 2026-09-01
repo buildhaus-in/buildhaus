@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Badge, Button } from "@buildhaus/ui";
+import { Card, Badge, ActionForm, SubmitButton } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { Input, Textarea } from "@buildhaus/ui";
 import { inr, dateLabel } from "@buildhaus/utils";
@@ -76,11 +76,11 @@ export default async function ClientChangeRequests() {
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Raise a new change request</h2>
-        <form action={raiseChangeRequest}>
+        <ActionForm action={raiseChangeRequest} successMessage="Change request submitted.">
           <Input name="title" label="Title" placeholder="e.g. Add extra wardrobe — Bedroom 2" required />
           <Textarea name="description" label="Description" placeholder="Describe what you'd like changed…" />
-          <Button type="submit" variant="primary">Submit request</Button>
-        </form>
+          <SubmitButton variant="primary">Submit request</SubmitButton>
+        </ActionForm>
       </Card>
     </div>
   );
