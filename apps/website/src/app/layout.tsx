@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | Buildhaus",
   },
   description:
-    "BuildHaus is design-led residential and commercial construction in Hyderabad & Nellore — transparent BOQ pricing, structured updates at every milestone and stage-wise quality checks, from blueprint to handover.",
+    "Buildhaus is design-led residential and commercial construction in Hyderabad & Nellore — transparent BOQ pricing, structured updates at every milestone and stage-wise quality checks, from blueprint to handover.",
   keywords: [
     "construction company Hyderabad", "construction company Nellore", "villa construction Hyderabad",
     "house construction Nellore", "house construction cost estimator", "turnkey construction Andhra Pradesh", "turnkey construction Telangana",
@@ -33,6 +33,18 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   manifest: "/manifest.webmanifest",
+  // app/icon.svg (the official icon vector) is auto-detected by Next.js and
+  // takes priority in browsers that support SVG favicons; these are the
+  // raster fallbacks for the ones that don't, generated straight from the
+  // same file (packages/brand/assets/logo/icon-orange-4x.png).
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 const LOCAL_BUSINESS_JSONLD = {

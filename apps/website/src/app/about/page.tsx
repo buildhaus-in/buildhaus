@@ -38,7 +38,7 @@ export default async function AboutPage() {
       <PublicHeader />
 
       <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">About BuildHaus</div>
+        <div className="text-xs font-bold uppercase tracking-widest text-brand">About Buildhaus</div>
         <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
           The only construction brand built on one belief: the home you envision is the home you receive.
         </h1>
@@ -51,7 +51,7 @@ export default async function AboutPage() {
 
       <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-3xl px-5 py-14">
-          <div className="text-[11px] font-bold uppercase tracking-widest text-sandlight">Why BuildHaus exists</div>
+          <div className="text-[11px] font-bold uppercase tracking-widest text-sandlight">Why Buildhaus exists</div>
           <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-sandlight">
             <p>
               There was never a shortage of builders. Lists were long. Options were endless. And
@@ -65,14 +65,14 @@ export default async function AboutPage() {
               middle ground.
             </p>
             <p>
-              That is where BuildHaus begins. We saw a client who didn&apos;t want to micromanage —
+              That is where Buildhaus begins. We saw a client who didn&apos;t want to micromanage —
               he wanted to be confident. So we built a construction experience around design that
               stands apart, pricing that hides nothing and a process that never leaves the client
               guessing. Nothing vague. Nothing hidden. Just a home that is exactly what was
               promised.
             </p>
             <p className="font-semibold text-ivory">
-              BuildHaus exists for that moment — so a homeowner never has to fight for what they
+              Buildhaus exists for that moment — so a homeowner never has to fight for what they
               were promised, and never feels let down, at any stage of the build.
             </p>
           </div>

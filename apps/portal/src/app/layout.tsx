@@ -13,6 +13,18 @@ export const metadata: Metadata = {
   description: "Buildhaus construction management portal.",
   manifest: "/manifest.webmanifest",
   robots: { index: false, follow: false, nocache: true },
+  // app/icon.svg (the official icon vector) is auto-detected by Next.js and
+  // takes priority in browsers that support SVG favicons; these are the
+  // raster fallbacks for the ones that don't, generated straight from the
+  // same file (packages/brand/assets/logo/icon-orange-4x.png).
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

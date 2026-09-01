@@ -29,7 +29,7 @@ export default function ServicesPage() {
           Built for those who expect better.
         </h1>
         <p className="mt-4 max-w-xl text-sand">
-          Whichever building you&apos;re planning, BuildHaus carries it from blueprint to handover —
+          Whichever building you&apos;re planning, Buildhaus carries it from blueprint to handover —
           design, procurement, site execution and quality under one accountable team.
         </p>
       </section>
