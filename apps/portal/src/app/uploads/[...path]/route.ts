@@ -1,19 +1,19 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { createClient, isDemoMode, resolveUploadPath } from "@buildhaus/database";
+import { createClient, isDemoMode, resolveUploadPath, getSignedDownloadUrl } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
 import { canViewProject } from "@/lib/authz";
 
-// Serves files written by uploadFile() (packages/database/src/storage.ts) in
-// Demo Mode. The uploaded file's URL (as stored in file_url/url columns) is
-// literally "/uploads/<folder>/<generated-name>.<ext>" — this route reads it
-// straight off disk and streams it back with a Content-Type inferred from
-// the extension, so links saved by drawing_revisions.file_url,
-// daily_report_photos.url and documents.file_url are actually viewable, not
-// just recorded metadata. Real Supabase Storage (once configured) serves
-// files directly from its own CDN URLs, so this route is a demo-only concern
-// — it 404s once Demo Mode is off.
+// Serves files written by uploadFile() (packages/database/src/storage.ts).
+// The uploaded file's URL (as stored in file_url/url columns) is literally
+// "/uploads/<folder>/<generated-name>.<ext>" either way uploadFile() ran —
+// in Demo Mode this route reads it straight off disk; against real Supabase
+// it resolves the same path to a short-lived signed Storage URL instead
+// (getSignedDownloadUrl()) and redirects there, since these buckets are
+// private and a plain object URL 403s in a browser <img>/<a>. Either way
+// this route is the ONLY place that needs to know which mode is active —
+// every page that renders a file_url/url column needs zero changes.
 //
 // This is a Route Handler, so — same caveat documented on
 // owner/quotations/[id]/download/route.ts — it is NOT covered by the (app)
@@ -45,10 +45,6 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 export async function GET(_req: Request, { params }: { params: { path: string[] } }) {
-  if (!isDemoMode()) {
-    return new NextResponse("Not found.", { status: 404 });
-  }
-
   const ctx = await getUserContext();
   if (!ctx) {
     return new NextResponse("Not authorised.", { status: 401 });
@@ -80,6 +76,15 @@ export async function GET(_req: Request, { params }: { params: { path: string[] 
   }
 
   const relPath = (params.path ?? []).join("/");
+
+  if (!isDemoMode()) {
+    const signedUrl = await getSignedDownloadUrl(relPath);
+    if (!signedUrl) {
+      return new NextResponse("Not found.", { status: 404 });
+    }
+    return NextResponse.redirect(signedUrl);
+  }
+
   const filePath = resolveUploadPath(relPath);
   if (!filePath) {
     return new NextResponse("Not found.", { status: 404 });

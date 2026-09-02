@@ -18,5 +18,5 @@ export type { Relation } from "./demo/relations";
 export { DEMO_USERS, findByEmail, findById, registerDemoUser } from "./demo/users";
 export type { DemoUser } from "./demo/users";
 
-export { uploadFile, resolveUploadPath } from "./storage";
+export { uploadFile, resolveUploadPath, getSignedDownloadUrl } from "./storage";
 export type { UploadInput, UploadResult } from "./storage";
