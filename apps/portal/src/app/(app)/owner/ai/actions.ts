@@ -9,9 +9,13 @@ export interface AskState {
   question: string;
 }
 
-// Demo Mode "AI Assistant" — deliberately NOT wired to any external LLM or
-// API key. This looks at real Demo Mode data and returns a templated
-// response so the screen is honest about being a stand-in, not a live model.
+// "AI Assistant" — deliberately NOT wired to any external LLM or API key,
+// in Demo Mode or against a real Supabase project alike. This queries
+// whichever backend is actually configured (real data once one is) and
+// returns a templated response, so the screen is honest about being a
+// stand-in rather than a live model — see docs/DEPLOYMENT.md's
+// ANTHROPIC_API_KEY note for the full picture: setting that var has no
+// effect until this is genuinely wired up.
 export async function askAssistant(_prev: AskState | null, formData: FormData): Promise<AskState> {
   const ctx = await getUserContext();
   const question = String(formData.get("question") || "").trim();
@@ -60,7 +64,7 @@ export async function askAssistant(_prev: AskState | null, formData: FormData): 
   }
 
   return {
-    answer: `[Demo response — no live AI call in Demo Mode]\n\n${body}`,
+    answer: `[Templated response — no live AI call]\n\n${body}`,
     question,
   };
 }

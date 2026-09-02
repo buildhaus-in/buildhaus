@@ -28,8 +28,8 @@ export function AiForm({ projects }: { projects: { id: string; code: string; nam
     <div className="space-y-4">
       <Card>
         <div className="mb-3 flex items-center gap-2">
-          <Badge tone="warn">Demo Mode</Badge>
-          <span className="text-xs text-muted">No external API key is used — responses are templated from your Demo Mode data.</span>
+          <Badge tone="warn">Templated, not live AI</Badge>
+          <span className="text-xs text-muted">No external API key is used — every response is a fixed template built from your project data, not a live model.</span>
         </div>
         <form action={action} className="space-y-3">
           <Select label="Ask about this project (optional)" name="project_id" defaultValue="">

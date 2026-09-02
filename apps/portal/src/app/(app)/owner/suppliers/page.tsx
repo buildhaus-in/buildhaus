@@ -22,7 +22,7 @@ export default async function SuppliersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-ivory">Suppliers</h1>
-        <p className="text-sm text-muted">Owner-only supplier directory and simple purchase requests. No supplier login in Demo Mode.</p>
+        <p className="text-sm text-muted">Owner-only supplier directory and simple purchase requests. Suppliers don&apos;t get a portal login.</p>
       </div>
 
       <Card>
