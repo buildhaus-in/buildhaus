@@ -23,7 +23,11 @@ export default async function ArchitectReviews() {
 
   const { data: allDrawings } = await supabase
     .from("drawings")
-    .select("id,drawing_no,title,discipline,status,current_revision,updated_at,projects(id,code,name),drawing_revisions(revision_no,status,notes,created_at,profiles(full_name))")
+    // drawing_revisions has two FKs to profiles (uploaded_by, reviewed_by) —
+    // a bare embedded profiles(...) is ambiguous and real Postgres/PostgREST
+    // rejects the query outright; Demo Mode's mock has no such check. This
+    // page renders it as "by {name}" per revision, i.e. who uploaded it.
+    .select("id,drawing_no,title,discipline,status,current_revision,updated_at,projects(id,code,name),drawing_revisions(revision_no,status,notes,created_at,profiles!uploaded_by(full_name))")
     .in("project_id", projectIds.length ? projectIds : ["__none__"])
     .order("updated_at", { ascending: false });
 

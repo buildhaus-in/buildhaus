@@ -27,7 +27,18 @@ export default async function ProjectDetail({ params }: { params: { id: string }
 
   const [{ data: stages }, { data: members }, { data: tasks }, { data: documents }] = await Promise.all([
     supabase.from("project_stages").select("seq,name,status,progress").eq("project_id", project.id).order("seq"),
-    supabase.from("project_members").select("role_key, profiles(full_name)").eq("project_id", project.id),
+    // project_members has two FKs to profiles (profile_id, assigned_by) —
+    // PostgREST can't auto-resolve which one a bare embedded `profiles(...)`
+    // means and rejects the query outright ("more than one relationship
+    // was found"), so this page's Team section always rendered "No one
+    // assigned yet" against a real Supabase project regardless of actual
+    // assignments. Demo Mode's mock query builder resolves this
+    // relationship via a static, hand-written mapping
+    // (packages/database/src/demo/relations.ts) that happens to already
+    // point at profile_id — confirming that's the intended relationship —
+    // which is exactly why this never surfaced there. `!profile_id` names
+    // the FK explicitly, same resolution PostgREST needs spelled out.
+    supabase.from("project_members").select("role_key, profiles!profile_id(full_name)").eq("project_id", project.id),
     supabase.from("tasks").select("id,title,status").eq("project_id", project.id).limit(6),
     supabase.from("documents").select("id,title,category,file_url,client_visible,uploaded_at").eq("project_id", project.id).order("uploaded_at", { ascending: false }),
   ]);

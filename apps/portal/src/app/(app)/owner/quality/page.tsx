@@ -14,8 +14,14 @@ export default async function QualityPage() {
   const supabase = createClient();
 
   const [{ data: inspections }, { data: projects }, { data: checklists }] = await Promise.all([
+    // inspections has two FKs to profiles (inspected_by, reviewed_by) — a
+    // bare embedded profiles(...) is ambiguous and real Postgres/PostgREST
+    // rejects the query outright ("more than one relationship was found"),
+    // so this page's "Inspected by" line always rendered "—" against a
+    // real Supabase project. Demo Mode's mock has no such ambiguity check,
+    // which is why this never surfaced there.
     supabase.from("inspections")
-      .select("id,stage,status,notes,inspected_at,project_id,projects(id,code,name),profiles(full_name)")
+      .select("id,stage,status,notes,inspected_at,project_id,projects(id,code,name),profiles!inspected_by(full_name)")
       .order("inspected_at", { ascending: false }),
     supabase.from("projects").select("id,code,name").order("created_at", { ascending: false }),
     supabase.from("quality_checklists").select("id,name"),

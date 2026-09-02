@@ -10,7 +10,14 @@ export default async function OwnerDrawings() {
 
   const { data: drawings } = await supabase
     .from("drawings")
-    .select("id,drawing_no,title,discipline,floor,status,current_revision,updated_at,projects(id,code,name),drawing_revisions(revision_no,status,notes,file_url,created_at,profiles(full_name))")
+    // drawing_revisions has two FKs to profiles (uploaded_by, reviewed_by),
+    // so a bare embedded profiles(...) is ambiguous and PostgREST rejects
+    // the whole query on a real Supabase project ("more than one
+    // relationship was found") — Demo Mode's mock has no such check, so
+    // this never surfaced. The profile name was never actually rendered
+    // anywhere on this page (dead select), so dropped rather than guessing
+    // which FK it should have disambiguated to.
+    .select("id,drawing_no,title,discipline,floor,status,current_revision,updated_at,projects(id,code,name),drawing_revisions(revision_no,status,notes,file_url,created_at)")
     .order("updated_at", { ascending: false });
 
   return (

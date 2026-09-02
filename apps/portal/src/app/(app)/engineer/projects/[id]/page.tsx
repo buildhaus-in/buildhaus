@@ -38,7 +38,10 @@ export default async function EngineerProjectDetail({ params }: { params: { id: 
 
   const [{ data: stages }, { data: members }, { data: myTasks }] = await Promise.all([
     supabase.from("project_stages").select("seq,name,status,progress").eq("project_id", project.id).order("seq"),
-    supabase.from("project_members").select("role_key, profiles(full_name)").eq("project_id", project.id),
+    // project_members has two FKs to profiles (profile_id, assigned_by) —
+    // see the same fix's comment in owner/projects/[id]/page.tsx for the
+    // full explanation.
+    supabase.from("project_members").select("role_key, profiles!profile_id(full_name)").eq("project_id", project.id),
     supabase.from("tasks").select("id,title,status,due_date").eq("project_id", project.id).eq("site_engineer_id", ctx?.userId ?? "").limit(8),
   ]);
 

@@ -14,7 +14,13 @@ export default async function DrawingDetail({ params }: { params: { id: string }
 
   const { data: drawing } = await supabase
     .from("drawings")
-    .select("id,project_id,drawing_no,title,discipline,floor,status,current_revision,issue_date,updated_at,projects(id,code,name),drawing_revisions(id,revision_no,status,notes,file_url,uploaded_by,created_at,profiles(full_name))")
+    // drawing_revisions has two FKs to profiles (uploaded_by, reviewed_by) —
+    // a bare embedded profiles(...) is ambiguous and real Postgres/PostgREST
+    // rejects the query outright ("more than one relationship was found");
+    // Demo Mode's mock has no such check, so this never surfaced. This page
+    // renders it as "Uploaded by {name}" below, so the FK it means is
+    // unambiguous even though PostgREST needs it spelled out.
+    .select("id,project_id,drawing_no,title,discipline,floor,status,current_revision,issue_date,updated_at,projects(id,code,name),drawing_revisions(id,revision_no,status,notes,file_url,uploaded_by,created_at,profiles!uploaded_by(full_name))")
     .eq("id", params.id)
     .maybeSingle();
   if (!drawing) notFound();
