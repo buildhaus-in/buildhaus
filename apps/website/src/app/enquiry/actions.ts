@@ -20,8 +20,22 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
   // Service context: anonymous visitors write into owner-only CRM tables
   // (leads/lead_activities/site_visits) — same convention as the estimator.
   const supabase = createAdminClient();
-  await supabase.from("leads").insert({
+
+  // leads.lead_no is not-null + unique(organisation_id, lead_no) — was
+  // missing from this insert entirely (Demo Mode's schema-less writes never
+  // surfaced it). A real Postgres project rejects the insert without it.
+  const { data: leadNo, error: leadNoError } = await supabase.rpc("next_code", {
+    p_org: IDS.org, p_scope: "lead", p_prefix: "BH-L",
+  });
+  if (leadNoError) return { error: "Couldn't submit your enquiry right now. Please try again." };
+
+  // Previously: this insert's result was discarded entirely and the
+  // function always returned { ok: true } regardless, so a rejected write
+  // (missing lead_no, or anything else) looked identical to a successful
+  // submission from the visitor's side — CLAUDE.md's "never fail silently."
+  const { error } = await supabase.from("leads").insert({
     organisation_id: IDS.org,
+    lead_no: leadNo,
     customer_name: name,
     mobile,
     email: email || null,
@@ -34,6 +48,7 @@ export async function submitEnquiry(_prev: EnquiryState, formData: FormData): Pr
     notes: requirement || null,
     source: "enquiry_form",
   });
+  if (error) return { error: "Couldn't submit your enquiry right now. Please try again." };
 
   return { ok: true };
 }

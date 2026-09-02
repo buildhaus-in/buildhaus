@@ -26,9 +26,24 @@ export async function createLead(
   const customerName = String(formData.get("customer_name") || "").trim();
   if (!customerName) return { ok: false, error: "Enter a customer name." };
 
+  // leads.lead_no is not-null + unique(organisation_id, lead_no) — every
+  // insert into this table needs one generated, the same way
+  // owner/projects/actions.ts's createProject calls next_code() for
+  // projects.code. Previously missing entirely here (and at every other
+  // leads-insert call site: apps/website's enquiry/cost-estimator/
+  // request-callback/request-site-visit), which Demo Mode's schema-less
+  // writes never surfaced — a real Postgres project would reject every one
+  // of these with "null value in column lead_no violates not-null
+  // constraint".
+  const { data: leadNo, error: leadNoError } = await supabase.rpc("next_code", {
+    p_org: ctx.profile!.organisation_id, p_scope: "lead", p_prefix: "BH-L",
+  });
+  if (leadNoError) return { ok: false, error: leadNoError.message || "Couldn't generate a lead number." };
+
   const result = unwrap(
     await supabase.from("leads").insert({
       organisation_id: ctx.profile!.organisation_id,
+      lead_no: leadNo,
       customer_name: customerName,
       mobile: String(formData.get("mobile") || "").trim() || null,
       email: String(formData.get("email") || "").trim() || null,

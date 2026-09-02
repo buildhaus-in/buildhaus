@@ -24,10 +24,19 @@ export async function submitSiteVisitRequest(_prev: SiteVisitState, formData: Fo
   // (leads/lead_activities/site_visits) — same convention as the estimator.
   const supabase = createAdminClient();
 
-  const { data: lead } = await supabase
+  // leads.lead_no is not-null + unique(organisation_id, lead_no) — was
+  // missing from this insert entirely (Demo Mode's schema-less writes never
+  // surfaced it). A real Postgres project rejects the insert without it.
+  const { data: leadNo, error: leadNoError } = await supabase.rpc("next_code", {
+    p_org: IDS.org, p_scope: "lead", p_prefix: "BH-L",
+  });
+  if (leadNoError) return { error: "Couldn't submit your request right now. Please try again." };
+
+  const { data: lead, error: leadError } = await supabase
     .from("leads")
     .insert({
       organisation_id: IDS.org,
+      lead_no: leadNo,
       customer_name: name,
       mobile,
       email: email || null,
@@ -43,20 +52,24 @@ export async function submitSiteVisitRequest(_prev: SiteVisitState, formData: Fo
     })
     .select()
     .single();
+  // Previously: this error was discarded and the function always returned
+  // { ok: true } regardless, so a rejected insert (missing lead_no, or
+  // anything else) looked identical to a successful submission from the
+  // visitor's side — CLAUDE.md's "never fail silently," just on the public
+  // site instead of the portal.
+  if (leadError || !lead) return { error: "Couldn't submit your request right now. Please try again." };
 
-  if (lead?.id) {
-    await supabase.from("site_visits").insert({
-      lead_id: lead.id,
-      scheduled_date: preferred_date,
-      status: "scheduled",
-      notes: notes || null,
-    });
-    await supabase.from("lead_activities").insert({
-      lead_id: lead.id,
-      type: "site_visit",
-      note: `Site visit requested via website for ${preferred_date}.`,
-    });
-  }
+  await supabase.from("site_visits").insert({
+    lead_id: lead.id,
+    scheduled_date: preferred_date,
+    status: "scheduled",
+    notes: notes || null,
+  });
+  await supabase.from("lead_activities").insert({
+    lead_id: lead.id,
+    type: "site_visit",
+    note: `Site visit requested via website for ${preferred_date}.`,
+  });
 
   return { ok: true };
 }

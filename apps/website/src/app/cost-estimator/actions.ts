@@ -124,10 +124,23 @@ export async function generateQuotation(_prev: ComputeState, formData: FormData)
   // client, so bypassing RLS does not widen what a visitor can touch.
   const supabase = createAdminClient();
 
-  const { data: lead } = await supabase
+  // leads.lead_no is not-null + unique(organisation_id, lead_no) — was
+  // missing from this insert entirely (and every other leads-insert call
+  // site across both apps), which Demo Mode's schema-less writes never
+  // surfaced. A real Postgres project rejects the insert outright without
+  // it, which — since this call's error was previously discarded (see
+  // below) — would have silently produced no lead and no quotation, with
+  // the visitor told their quotation was ready regardless.
+  const { data: leadNo, error: leadNoError } = await supabase.rpc("next_code", {
+    p_org: IDS.org, p_scope: "lead", p_prefix: "BH-L",
+  });
+  if (leadNoError) return { error: "Couldn't generate your quotation right now. Please try again." };
+
+  const { data: lead, error: leadError } = await supabase
     .from("leads")
     .insert({
       organisation_id: IDS.org,
+      lead_no: leadNo,
       customer_name: inputs.name,
       mobile: inputs.mobile,
       whatsapp: inputs.whatsapp,
@@ -149,6 +162,7 @@ export async function generateQuotation(_prev: ComputeState, formData: FormData)
     })
     .select()
     .single();
+  if (leadError || !lead) return { error: "Couldn't generate your quotation right now. Please try again." };
 
   // The real Postgres next_code(p_org, p_scope, p_prefix) requires the org id
   // (the demo mock defaults it, which masked this) — pass it explicitly.
