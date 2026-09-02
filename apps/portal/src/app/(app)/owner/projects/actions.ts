@@ -1,6 +1,13 @@
 "use server";
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
+// `File` only became a Node.js global in v20 — nothing here previously
+// imported it, so `instanceof File` below crashed with "File is not
+// defined" on Node 18. node:buffer has exported a stable File since
+// Node 18.13; aliased rather than shadowing the ambient DOM `File` type
+// this file's own annotations (and uploadFile()'s signature) already rely
+// on — only used for the runtime `instanceof` check below, never as a type.
+import { File as NodeFile } from "node:buffer";
 import { revalidatePath } from "next/cache";
 import { createProjectSchema, zodErrorToFieldErrors, type ActionResult } from "@buildhaus/validation";
 import { assertOwner } from "@/lib/authz";
@@ -30,13 +37,17 @@ export async function uploadDocument(
   if (!title) return { error: "Please enter a title." };
 
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size <= 0) {
+  if (!(file instanceof NodeFile) || file.size <= 0) {
     return { error: "Please choose a file to upload." };
   }
-  const validationError = validateFile(file, "document");
+  // Narrowed to node:buffer's File (see the import comment above), not the
+  // ambient DOM File type validateFile()/uploadFile() declare — functionally
+  // compatible (both only ever use .size/.type/.arrayBuffer()/.name here).
+  const webFile = file as unknown as File;
+  const validationError = validateFile(webFile, "document");
   if (validationError) return { error: validationError };
 
-  const { url } = await uploadFile({ file, filename: file.name, folder: `documents/${projectId}` });
+  const { url } = await uploadFile({ file: webFile, filename: webFile.name, folder: `documents/${projectId}` });
 
   // Previously ignored: the insert's error was never checked, so a rejected
   // write (RLS, a NOT NULL violation, ...) looked identical to a successful

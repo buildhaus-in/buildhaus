@@ -1,6 +1,15 @@
 "use server";
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
+// `File` only became a Node.js global in v20 — this action runs on
+// whatever Node version the server process actually has (confirmed live:
+// this crashed with "File is not defined" under Node 18, since nothing
+// here previously imported it and just used the bare global). node:buffer
+// has exported a stable File since Node 18.13; aliased rather than
+// shadowing the ambient DOM `File` type this file's own annotations (and
+// uploadFile()'s signature) already rely on — only used for the runtime
+// `instanceof` check below, never as a type.
+import { File as NodeFile } from "node:buffer";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
@@ -65,14 +74,20 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
   const photoUploads: { index: number; file: File }[] = [];
   for (let i = 0; i < PHOTO_ROWS; i++) {
     const file = formData.get(`photo_file_${i}`);
-    if (file instanceof File && file.size > 0) {
-      const validationError = validateFile(file, "photo");
+    if (file instanceof NodeFile && file.size > 0) {
+      // Narrowed to node:buffer's File (see the import comment above), not
+      // the ambient DOM File type validateFile()/uploadFile() declare —
+      // functionally compatible (both only ever use .size/.type/
+      // .arrayBuffer() here), so cast rather than duplicating those
+      // functions' signatures for a distinction with no runtime difference.
+      const webFile = file as unknown as File;
+      const validationError = validateFile(webFile, "photo");
       if (validationError) {
         redirect(
           `/engineer/report?project=${projectId}&error=${encodeURIComponent(`Photo ${i + 1}: ${validationError}`)}`
         );
       }
-      photoUploads.push({ index: i, file });
+      photoUploads.push({ index: i, file: webFile });
     }
   }
 
