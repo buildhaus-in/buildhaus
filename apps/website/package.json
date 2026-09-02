@@ -16,7 +16,7 @@
     "@buildhaus/utils": "*",
     "@buildhaus/types": "*",
     "@buildhaus/validation": "*",
-    "next": "14.2.15",
+    "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0",
@@ -34,6 +34,6 @@
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
     "eslint": "^8.57.1",
-    "eslint-config-next": "14.2.15"
+    "eslint-config-next": "14.2.35"
   }
 }
