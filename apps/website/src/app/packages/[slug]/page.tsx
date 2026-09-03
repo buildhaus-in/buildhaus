@@ -28,10 +28,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function PackageDetailPage({ params }: { params: { slug: string } }) {
   const supabase = createClient();
-  const { data: packages } = await supabase
+  const { data: packages, error } = await supabase
     .from("estimator_packages")
     .select("id,key,label,rate_per_sqft,description,series,best_for,highlights,specs,inclusions,exclusions")
     .order("rate_per_sqft", { ascending: true });
+  if (error) throw new Error(`Couldn't load packages: ${error.message}`);
 
   const pkg = (packages ?? []).find((p: any) => p.key === params.slug);
   if (!pkg) notFound();

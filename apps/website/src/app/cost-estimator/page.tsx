@@ -5,10 +5,11 @@ import { EmptyState } from "@buildhaus/ui";
 
 export default async function CostEstimatorPage({ searchParams }: { searchParams: { package?: string } }) {
   const supabase = createClient();
-  const { data: packages } = await supabase
+  const { data: packages, error } = await supabase
     .from("estimator_packages")
     .select("id,key,label,rate_per_sqft,description")
     .order("rate_per_sqft", { ascending: true });
+  if (error) throw new Error(`Couldn't load packages: ${error.message}`);
 
   return (
     <main className="min-h-screen bg-bg text-ink">

@@ -14,10 +14,11 @@ export const metadata: Metadata = {
 // Per brand rules, Premium (Signature Series) is the default recommendation.
 const RECOMMENDED_KEY = "premium";
 
-// One-line selection guide per package key (Pricing Catalog v2).
+// One-line selection guide per package key (Pricing Catalog v2). Falls back
+// to the package's own `description` for any key not listed here, so a new
+// tier the Owner adds later never shows a blank line.
 const SELECTION_GUIDE: Record<string, string> = {
-  basic: "Best for budget-led or rental projects",
-  standard: "Best value for practical home construction",
+  essential: "Best for budget-led or rental projects",
   premium: "Recommended for most end-use residential clients",
   luxury: "Best for premium residences and design-led homes",
 };
@@ -26,10 +27,25 @@ const SELECTION_GUIDE: Record<string, string> = {
 // `estimator_packages` — never hardcoded in this page.
 export default async function PackagesPage() {
   const supabase = createClient();
-  const { data: packages } = await supabase
+  const { data: packages, error } = await supabase
     .from("estimator_packages")
     .select("id,key,label,rate_per_sqft,description,series,best_for,highlights,inclusions,exclusions")
     .order("rate_per_sqft", { ascending: true });
+
+  // Distinguish "genuinely no packages configured yet" from "the query
+  // itself failed" — these used to be conflated into the same "ask the
+  // Owner to configure this" empty state below, which silently told every
+  // visitor the Owner hadn't set anything up even when the real cause was
+  // a broken query (see supabase/migrations/0022_estimator_packages_content_columns.sql).
+  if (error) {
+    throw new Error(`Couldn't load packages: ${error.message}`);
+  }
+
+  // "Four levels" was a leftover from an earlier catalog; the number of
+  // tiers is whatever the Owner has actually configured, so it's spelled
+  // out here rather than hardcoded.
+  const tierCount = (packages ?? []).length;
+  const tierWord = tierCount === 3 ? "Three" : tierCount === 4 ? "Four" : String(tierCount);
 
   return (
     <main className="min-h-screen bg-bg text-ink">
@@ -38,7 +54,7 @@ export default async function PackagesPage() {
       <section className="mx-auto max-w-6xl px-5 py-16">
         <div className="text-xs font-bold uppercase tracking-widest text-brand">Construction packages</div>
         <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          Four levels of experience. One transparent starting rate per sqft.
+          {tierWord} levels of experience. One transparent starting rate per sqft.
         </h1>
         <p className="mt-4 max-w-xl text-sand">
           Our packages are levels of experience, not just cost — every tier gets the same structural
