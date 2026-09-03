@@ -38,7 +38,7 @@ export function PublicHeader() {
           <img
             src="/brand/wordmark-orange.svg"
             alt="Buildhaus — Design, Build, Deliver"
-            className="h-auto w-48 sm:w-56 md:w-64"
+            className="h-auto w-[135px] sm:w-[148px] md:w-[190px]"
           />
         </Link>
         <nav className="hidden items-center gap-1 text-sm md:flex">
