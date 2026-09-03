@@ -9,14 +9,15 @@ import { PORTAL_URL } from "@/lib/env";
 // verbatim from "Buildhaus Logo File/", never redrawn) in the header and a
 // deep-navy footer panel, so the whole public site reads as one brand.
 //
-// Header uses the "WM 5" wordmark-on-card variant (public/brand/
-// wordmark-5-bg.svg — orange wordmark on a light-gray card, from "Buildhaus
-// Logo File/Wordmark/With Background/SVG/WM 5.svg", copied verbatim) —
-// chosen over the WM 3 variant (tan-on-light-gray) for contrast against the
-// header's own light background, and it matches the brand orange used
-// throughout the rest of the site. The footer keeps the plain white
-// wordmark (public/brand/wordmark-white.svg): a light-card badge would
-// clash sitting on the dark navy footer panel, so that one stays as-is.
+// Header uses the plain transparent wordmark (public/brand/
+// wordmark-orange.svg — orange text, no card/background; identical artwork
+// to "Buildhaus Logo File/Wordmark/Without Background/SVG/WM 1.svg", just
+// pre-cropped to its content's own bounding box instead of that file's full
+// padded 1500x1500 canvas) rather than any of the wordmark-on-card variants
+// tried earlier this session. Sized wide rather than square since its
+// viewBox is a tight crop, not a square canvas. Footer keeps the plain
+// white wordmark (public/brand/wordmark-white.svg) for the same artwork on
+// the dark navy panel.
 
 const NAV_LINKS = [
   { href: "/services", label: "Services" },
@@ -35,9 +36,9 @@ export function PublicHeader() {
               official logo SVG, served byte-for-byte as shipped; not a
               content image next/image should optimise/rewrite. */}
           <img
-            src="/brand/wordmark-5-bg.svg"
+            src="/brand/wordmark-orange.svg"
             alt="Buildhaus — Design, Build, Deliver"
-            className="h-24 w-24 rounded-xl sm:h-28 sm:w-28"
+            className="h-auto w-48 sm:w-56 md:w-64"
           />
         </Link>
         <nav className="hidden items-center gap-1 text-sm md:flex">
