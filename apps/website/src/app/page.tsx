@@ -26,22 +26,39 @@ export default async function Home() {
       <PublicHeader />
 
       <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          The home you envision is the home you receive.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          Buildhaus manages design, estimation, procurement and site execution under one
-          accountable team — with every cost visible and every milestone reported before
-          you have to ask. Clear processes. Honest pricing. Quality without compromise.
-        </p>
-        <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Estimate your build</Link>
-          <Link href="/projects" className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">See past projects</Link>
+        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
+            <h1 className="mt-3 text-4xl font-black leading-tight text-ivory sm:text-5xl">
+              The home you envision is the home you receive.
+            </h1>
+            <p className="mt-4 max-w-xl text-sand">
+              Buildhaus manages design, estimation, procurement and site execution under one
+              accountable team — with every cost visible and every milestone reported before
+              you have to ask. Clear processes. Honest pricing. Quality without compromise.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Estimate your build</Link>
+              <Link href="/projects" className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">See past projects</Link>
+            </div>
+            <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-muted">
+              Trust. Precision. Delivered as promised.
+            </p>
+          </div>
+          {/* Stock photo (Unsplash License, free for commercial use) — a
+              generic house-under-construction shot, not a specific Buildhaus
+              project. Swap for a real site photo once the Owner has one;
+              never pair this with copy implying it's an actual Buildhaus
+              build. */}
+          <div className="overflow-hidden rounded-xl2 border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photo, no optimisation pipeline needed for a single hero image */}
+            <img
+              src="/images/hero-house.jpg"
+              alt="A home under construction — illustrative photo, not a specific Buildhaus project"
+              className="aspect-[4/3] w-full object-cover"
+            />
+          </div>
         </div>
-        <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-muted">
-          Trust. Precision. Delivered as promised.
-        </p>
       </section>
 
       <section className="border-y border-border bg-sky-soft">
@@ -61,7 +78,29 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Stock photos (Unsplash License, free for commercial use) —
+          illustrative of the design/build/deliver process in general, not
+          documentation of a specific Buildhaus project. Swap each for a
+          real site/project photo as they become available; the "Featured
+          projects" section below is the one place that must only ever show
+          real, Owner-published project data. */}
       <section className="mx-auto max-w-5xl px-5 py-14">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            { src: "/images/blueprints.jpg", label: "Design", alt: "Architectural floor plans on a table" },
+            { src: "/images/construction-workers.jpg", label: "Build", alt: "Construction workers on site" },
+            { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior" },
+          ].map((img) => (
+            <div key={img.label} className="overflow-hidden rounded-xl2 border border-border">
+              {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photos, no optimisation pipeline needed for three static images */}
+              <img src={img.src} alt={img.alt} className="aspect-[4/3] w-full object-cover" />
+              <div className="bg-card px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-sandlight">{img.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-5 pb-14">
         <div className="grid gap-4 sm:grid-cols-3">
           {[
             { title: "Nothing hidden", body: "Every line of cost is in the BOQ before you sign — and it stays visible through the build. No hidden costs. No surprises. Ever." },
