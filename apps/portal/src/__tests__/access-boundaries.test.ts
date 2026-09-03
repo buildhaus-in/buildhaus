@@ -277,7 +277,10 @@ afterAll(async () => {
   // Best-effort, individually caught — a failure partway through must not
   // stop the rest of cleanup from running (see the identical pattern in
   // this session's scripts/_teardown_ui_test.mjs).
-  const step = async (label: string, fn: () => Promise<unknown>) => {
+  // PromiseLike, not Promise — Supabase's PostgrestFilterBuilder is thenable
+  // (satisfies `await`) but its type doesn't declare .catch/.finally/
+  // Symbol.toStringTag, so it structurally fails a `Promise<unknown>` check.
+  const step = async (label: string, fn: () => PromiseLike<unknown>) => {
     try {
       await fn();
     } catch (e: any) {
