@@ -21,10 +21,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-6 flex justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element -- the
-              official Primary Logo file, With Background, served as shipped
-              (its cream card background is baked into the SVG itself — this
-              is deliberately the only "box" around it, per brand usage). */}
-          <img src="/brand/primary-logo.svg" alt="Buildhaus" className="h-28 w-28 rounded-2xl" />
+              "WM 5" wordmark badge (orange card, near-white wordmark), same
+              file as the website header (apps/website/public/brand/
+              wordmark-5-bg.svg) — its background is baked into the SVG
+              itself, per brand usage. */}
+          <img src="/brand/wordmark-5-bg.svg" alt="Buildhaus" className="h-28 w-28 rounded-2xl" />
         </Link>
         <p className="mb-6 text-center text-sm text-muted">Sign in to your workspace</p>
         <form action={action} className="rounded-xl2 border border-border bg-card p-6">
