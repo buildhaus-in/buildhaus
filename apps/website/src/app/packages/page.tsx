@@ -18,7 +18,8 @@ const RECOMMENDED_KEY = "premium";
 // to the package's own `description` for any key not listed here, so a new
 // tier the Owner adds later never shows a blank line.
 const SELECTION_GUIDE: Record<string, string> = {
-  essential: "Best for budget-led or rental projects",
+  basic: "Best for budget-led or rental projects",
+  standard: "Best value for practical home construction",
   premium: "Recommended for most end-use residential clients",
   luxury: "Best for premium residences and design-led homes",
 };
