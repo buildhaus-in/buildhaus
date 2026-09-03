@@ -37,7 +37,7 @@ export function PublicHeader() {
           <img
             src="/brand/wordmark-5-bg.svg"
             alt="Buildhaus — Design, Build, Deliver"
-            className="h-16 w-16 rounded-xl sm:h-20 sm:w-20"
+            className="h-24 w-24 rounded-xl sm:h-28 sm:w-28"
           />
         </Link>
         <nav className="hidden items-center gap-1 text-sm md:flex">
