@@ -9,12 +9,13 @@ import { PORTAL_URL } from "@/lib/env";
 // verbatim from "Buildhaus Logo File/", never redrawn) in the header and a
 // deep-navy footer panel, so the whole public site reads as one brand.
 //
-// Header uses the Primary Logo (icon + wordmark on its own cream card,
-// public/brand/primary-logo.svg — identical to the portal's login page,
-// apps/portal/src/app/login/page.tsx) rather than the bare wordmark, so the
-// header carries the same badge the portal's own sign-in screen does. The
-// footer keeps the plain white wordmark (public/brand/wordmark-white.svg):
-// the Primary Logo's cream card is sized for a light background and would
+// Header uses the "WM 5" wordmark-on-card variant (public/brand/
+// wordmark-5-bg.svg — orange wordmark on a light-gray card, from "Buildhaus
+// Logo File/Wordmark/With Background/SVG/WM 5.svg", copied verbatim) —
+// chosen over the WM 3 variant (tan-on-light-gray) for contrast against the
+// header's own light background, and it matches the brand orange used
+// throughout the rest of the site. The footer keeps the plain white
+// wordmark (public/brand/wordmark-white.svg): a light-card badge would
 // clash sitting on the dark navy footer panel, so that one stays as-is.
 
 const NAV_LINKS = [
@@ -34,9 +35,9 @@ export function PublicHeader() {
               official logo SVG, served byte-for-byte as shipped; not a
               content image next/image should optimise/rewrite. */}
           <img
-            src="/brand/primary-logo.svg"
+            src="/brand/wordmark-5-bg.svg"
             alt="Buildhaus — Design, Build, Deliver"
-            className="h-11 w-11 rounded-xl sm:h-12 sm:w-12"
+            className="h-16 w-16 rounded-xl sm:h-20 sm:w-20"
           />
         </Link>
         <nav className="hidden items-center gap-1 text-sm md:flex">
