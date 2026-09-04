@@ -79,7 +79,6 @@ export async function createDrawing(_prevState: DrawingFormState, formData: Form
       floor: String(formData.get("floor") || "") || null,
       status: "draft",
       current_revision: 0,
-      issue_date: null,
     })
     .select()
     .single();

@@ -20,7 +20,7 @@ export default async function DrawingDetail({ params }: { params: { id: string }
     // Demo Mode's mock has no such check, so this never surfaced. This page
     // renders it as "Uploaded by {name}" below, so the FK it means is
     // unambiguous even though PostgREST needs it spelled out.
-    .select("id,project_id,drawing_no,title,discipline,floor,status,current_revision,issue_date,updated_at,projects(id,code,name),drawing_revisions(id,revision_no,status,notes,file_url,uploaded_by,created_at,profiles!uploaded_by(full_name))")
+    .select("id,project_id,drawing_no,title,discipline,floor,status,current_revision,updated_at,projects(id,code,name),drawing_revisions(id,revision_no,status,notes,file_url,uploaded_by,created_at,profiles!uploaded_by(full_name))")
     .eq("id", params.id)
     .maybeSingle();
   if (!drawing) notFound();
@@ -66,7 +66,8 @@ export default async function DrawingDetail({ params }: { params: { id: string }
           <StatusBadge status={drawing.status} />
         </div>
         <p className="text-sm text-muted">
-          {(drawing.projects as any)?.name ?? "—"} · {drawing.discipline?.replace(/_/g, " ")} · {drawing.floor ?? "—"} · issued {dateLabel(drawing.issue_date)}
+          {(drawing.projects as any)?.name ?? "—"} · {drawing.discipline?.replace(/_/g, " ")} · {drawing.floor ?? "—"}
+          {(currentRevision ?? newestRevision) && <> · last revision {dateLabel((currentRevision ?? newestRevision).created_at)}</>}
         </p>
       </div>
 

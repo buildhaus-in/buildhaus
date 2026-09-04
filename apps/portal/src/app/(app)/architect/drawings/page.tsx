@@ -27,7 +27,7 @@ export default async function ArchitectDrawings({
 
   let query = supabase
     .from("drawings")
-    .select("id,drawing_no,title,discipline,floor,status,current_revision,issue_date,updated_at,projects(id,code,name)")
+    .select("id,drawing_no,title,discipline,floor,status,current_revision,updated_at,projects(id,code,name)")
     .in("project_id", projectIds.length ? projectIds : ["__none__"])
     .order("updated_at", { ascending: false });
 
