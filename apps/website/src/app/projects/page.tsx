@@ -38,9 +38,9 @@ export default async function ProjectsPage() {
             {projects.map((p: any) => (
               <Link key={p.id} href={`/projects/${p.slug}`}>
                 <Card className="h-full transition hover:border-brand/60">
-                  <div className="text-xs uppercase tracking-wide text-brand">{p.project_type} · {p.package}</div>
+                  <div className="text-xs uppercase tracking-wide text-brand">{p.project_type}{p.package && <> · {p.package}</>}</div>
                   <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
-                  <div className="text-sm text-muted">{p.city} · {p.completion_year}</div>
+                  <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                     <span>{sqft(p.builtup_area_sqft)}</span>
                     <span>~{inr(p.approx_cost)}</span>

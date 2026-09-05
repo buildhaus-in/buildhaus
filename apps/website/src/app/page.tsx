@@ -125,9 +125,9 @@ export default async function Home() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((p: any) => (
               <div key={p.id} className="rounded-xl2 border border-border bg-card p-5">
-                <div className="text-xs uppercase tracking-wide text-brand">{p.project_type} · {p.package}</div>
+                <div className="text-xs uppercase tracking-wide text-brand">{p.project_type}{p.package && <> · {p.package}</>}</div>
                 <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
-                <div className="text-sm text-muted">{p.city} · {p.completion_year}</div>
+                <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                   <span>{sqft(p.builtup_area_sqft)}</span>
                   <span>~{inr(p.approx_cost)}</span>

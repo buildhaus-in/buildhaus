@@ -17,7 +17,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .maybeSingle();
   if (!project) return {};
   const title = project.name;
-  const description = project.description || `A ${project.project_type} project in ${project.city}, completed ${project.completion_year}.`;
+  const description =
+    project.description ||
+    `A ${project.project_type} project in ${project.city}${project.completion_year ? `, completed ${project.completion_year}` : ""}.`;
   const url = `${WEBSITE_URL}/projects/${params.slug}`;
   return {
     title,
@@ -82,8 +84,8 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
         <Link href="/projects" className="text-xs font-semibold text-brand hover:underline">← All projects</Link>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Badge tone="brand">{project.project_type}</Badge>
-          <Badge tone="muted">{project.package} package</Badge>
-          <Badge tone="muted">{project.city} · {project.completion_year}</Badge>
+          {project.package && <Badge tone="muted">{project.package} package</Badge>}
+          <Badge tone="muted">{project.city}{project.completion_year && <> · {project.completion_year}</>}</Badge>
         </div>
         <h1 className="mt-3 max-w-2xl text-3xl font-black leading-tight text-ivory sm:text-4xl">
           {project.name}
