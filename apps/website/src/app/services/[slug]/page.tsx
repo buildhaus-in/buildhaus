@@ -7,6 +7,7 @@ import { Card } from "@buildhaus/ui";
 import { inr, sqft } from "@buildhaus/utils";
 import { WEBSITE_URL } from "@/lib/env";
 import { SERVICES, getService } from "../data";
+import { CATEGORY_HUE } from "@/lib/palette";
 
 export function generateStaticParams() {
   return SERVICES.map((s) => ({ slug: s.slug }));
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ServiceDetailPage({ params }: { params: { slug: string } }) {
   const service = getService(params.slug);
   if (!service) notFound();
+  const hue = CATEGORY_HUE[service.slug];
 
   const supabase = createClient();
   const { data: packages } = await supabase
@@ -111,7 +113,10 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
           <span className="mx-1.5">/</span>
           <span className="text-sand">{service.title}</span>
         </nav>
-        <div className="mt-4 text-xs font-bold uppercase tracking-widest text-brand">Service</div>
+        <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest ${hue.text}`}>
+          <span className={`h-2 w-2 rounded-full ${hue.dot}`} aria-hidden />
+          Service
+        </div>
         <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
           {service.title}
         </h1>
@@ -154,10 +159,10 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
             <div className="text-sm font-bold text-ivory">Material options</div>
             <ul className="mt-3 space-y-1.5">
               {service.materialOptions.map((m) => (
-                <li key={m} className="flex gap-2 text-sm text-sand"><span className="text-brand">•</span><span>{m}</span></li>
+                <li key={m} className="flex gap-2 text-sm text-sand"><span className={hue.text}>•</span><span>{m}</span></li>
               ))}
             </ul>
-            <Link href="/materials" className="mt-4 inline-block text-xs font-semibold text-brand hover:underline">See full material specifications →</Link>
+            <Link href="/materials" className={`mt-4 inline-block text-xs font-semibold ${hue.text} hover:underline`}>See full material specifications →</Link>
           </Card>
         </div>
       </section>
@@ -167,8 +172,8 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
           <h2 className="mb-6 text-xl font-bold text-ivory">Design & construction process</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {service.process.map((p, i) => (
-              <div key={p} className="rounded-xl2 border border-border bg-card p-4">
-                <div className="text-sm font-bold text-brand">{i + 1}.</div>
+              <div key={p} className={`rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-4`}>
+                <div className={`text-sm font-bold ${hue.text}`}>{i + 1}.</div>
                 <p className="mt-1 text-xs text-muted">{p}</p>
               </div>
             ))}
@@ -234,8 +239,8 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {relatedProjects.map((p: any) => (
                 <Link key={p.id} href={`/projects/${p.slug}`}>
-                  <Card className="h-full transition-colors hover:border-brand/50">
-                    <div className="text-xs uppercase tracking-wide text-brand">{p.city} · {p.completion_year}</div>
+                  <Card className={`h-full border-l-4 ${hue.borderL} transition-colors hover:brightness-[0.98]`}>
+                    <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.city} · {p.completion_year}</div>
                     <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                       <span>{sqft(p.builtup_area_sqft)}</span>

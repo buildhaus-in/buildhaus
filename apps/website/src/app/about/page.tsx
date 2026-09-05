@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, StatCard } from "@buildhaus/ui";
+import { hueFor } from "@/lib/palette";
 
 export default async function AboutPage() {
   const supabase = createClient();
@@ -81,27 +82,19 @@ export default async function AboutPage() {
 
       <section className="mx-auto max-w-5xl px-5 py-14">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-brand">Purpose</div>
-            <p className="mt-2 text-sm text-sand">
-              The home you imagined should always be the home you receive. No less in design, no
-              less in transparency and no less in quality.
-            </p>
-          </Card>
-          <Card>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-brand">How we work</div>
-            <p className="mt-2 text-sm text-sand">
-              Most construction companies will tell you what they build. We will show you how —
-              and let you decide if that is the standard you are looking for.
-            </p>
-          </Card>
-          <Card>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-brand">What we hold to</div>
-            <p className="mt-2 text-sm text-sand">
-              Trust. Precision. Delivered as promised. Every message we send and every milestone we
-              report connects back to that thought.
-            </p>
-          </Card>
+          {[
+            { title: "Purpose", body: "The home you imagined should always be the home you receive. No less in design, no less in transparency and no less in quality." },
+            { title: "How we work", body: "Most construction companies will tell you what they build. We will show you how — and let you decide if that is the standard you are looking for." },
+            { title: "What we hold to", body: "Trust. Precision. Delivered as promised. Every message we send and every milestone we report connects back to that thought." },
+          ].map((c, i) => {
+            const hue = hueFor(i);
+            return (
+              <Card key={c.title} className={`border-t-2 ${hue.borderT}`}>
+                <div className={`text-[11px] font-bold uppercase tracking-wide ${hue.text}`}>{c.title}</div>
+                <p className="mt-2 text-sm text-sand">{c.body}</p>
+              </Card>
+            );
+          })}
         </div>
       </section>
 
@@ -118,15 +111,18 @@ export default async function AboutPage() {
         <h2 className="mb-2 text-xl font-bold text-ivory">What we stand for</h2>
         <p className="mb-6 max-w-xl text-sm text-muted">Five values, applied to every project. Stated once, held throughout.</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          {values.map((v, i) => (
-            <Card key={v.title} className={i === values.length - 1 ? "sm:col-span-2" : undefined}>
-              <div className="flex items-baseline gap-2">
-                <span className="text-sm font-bold text-brand">{String(i + 1).padStart(2, "0")}</span>
-                <span className="text-sm font-bold text-ivory">{v.title}</span>
-              </div>
-              <p className="mt-2 text-sm text-muted">{v.body}</p>
-            </Card>
-          ))}
+          {values.map((v, i) => {
+            const hue = hueFor(i);
+            return (
+              <Card key={v.title} className={`border-l-4 ${hue.borderL} ${i === values.length - 1 ? "sm:col-span-2" : ""}`}>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-sm font-bold ${hue.text}`}>{String(i + 1).padStart(2, "0")}</span>
+                  <span className="text-sm font-bold text-ivory">{v.title}</span>
+                </div>
+                <p className="mt-2 text-sm text-muted">{v.body}</p>
+              </Card>
+            );
+          })}
         </div>
       </section>
 

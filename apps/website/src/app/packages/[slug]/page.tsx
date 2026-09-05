@@ -5,6 +5,7 @@ import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, Badge } from "@buildhaus/ui";
 import { WEBSITE_URL } from "@/lib/env";
+import { TIER_HUE } from "@/lib/palette";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = createClient();
@@ -39,6 +40,7 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
 
   // Per brand rules, Premium (Signature Series) is the default recommendation.
   const isRecommended = pkg.key === "premium";
+  const hue = TIER_HUE[pkg.key] ?? TIER_HUE.premium;
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",
@@ -86,7 +88,8 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
           <span className="text-sand">{pkg.label}</span>
         </nav>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <div className="text-xs font-bold uppercase tracking-widest text-brand">
+          <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest ${hue.text}`}>
+            <span className={`h-2 w-2 rounded-full ${hue.dot}`} aria-hidden />
             {pkg.series ? `Construction package · ${pkg.series}` : "Construction package"}
           </div>
           {isRecommended && <Badge tone="brand">Recommended</Badge>}
@@ -95,7 +98,7 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
           {pkg.label} package
         </h1>
         <p className="mt-4 max-w-xl text-sand">{pkg.description}</p>
-        <div className="mt-4 text-3xl font-extrabold text-brand">
+        <div className={`mt-4 text-3xl font-extrabold ${hue.textStrong}`}>
           ₹{Number(pkg.rate_per_sqft).toLocaleString("en-IN")}<span className="text-base font-medium text-muted">/sqft</span>
         </div>
         <p className="mt-2 max-w-xl text-xs text-muted">
@@ -105,7 +108,7 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
         {(pkg.best_for ?? []).length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
             {(pkg.best_for ?? []).map((b: string) => (
-              <span key={b} className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-sand">{b}</span>
+              <span key={b} className={`rounded-full border ${hue.border} ${hue.bg} px-3 py-1 text-xs font-medium ${hue.text}`}>{b}</span>
             ))}
           </div>
         )}
@@ -198,20 +201,23 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="mb-6 text-xl font-bold text-ivory">Compare with other packages</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {(packages ?? []).map((p: any) => (
+            {(packages ?? []).map((p: any) => {
+              const h = TIER_HUE[p.key] ?? TIER_HUE.premium;
+              return (
               <Link key={p.id} href={`/packages/${p.key}`}>
-                <Card className={`h-full transition-colors hover:border-brand/50 ${p.key === pkg.key ? "border-brand/60" : ""}`}>
+                <Card className={`h-full border-t-4 ${h.borderT} transition-colors hover:brightness-95`}>
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-bold text-ivory">{p.label}</div>
                     {p.key === pkg.key && <Badge tone="brand">Viewing</Badge>}
                   </div>
-                  <div className="mt-2 text-lg font-extrabold text-brand">
+                  <div className={`mt-2 text-lg font-extrabold ${h.textStrong}`}>
                     ₹{Number(p.rate_per_sqft).toLocaleString("en-IN")}<span className="text-xs font-medium text-muted">/sqft</span>
                   </div>
                   <p className="mt-2 text-xs text-muted">{p.description}</p>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

@@ -4,6 +4,7 @@ import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { inr, sqft } from "@buildhaus/utils";
 import { EmptyState } from "@buildhaus/ui";
 import { Card } from "@buildhaus/ui";
+import { hueForProjectType } from "@/lib/palette";
 
 export default async function ProjectsPage() {
   const supabase = createClient();
@@ -35,10 +36,12 @@ export default async function ProjectsPage() {
           <EmptyState title="No public projects yet" hint="Projects will appear here once the Owner publishes them." />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p: any) => (
+            {projects.map((p: any) => {
+              const hue = hueForProjectType(p.project_type);
+              return (
               <Link key={p.id} href={`/projects/${p.slug}`}>
-                <Card className="h-full transition hover:border-brand/60">
-                  <div className="text-xs uppercase tracking-wide text-brand">{p.project_type}{p.package && <> · {p.package}</>}</div>
+                <Card className={`h-full border-t-4 ${hue.borderT} transition hover:brightness-[0.98]`}>
+                  <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.project_type}{p.package && <> · {p.package}</>}</div>
                   <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
                   <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
@@ -49,7 +52,8 @@ export default async function ProjectsPage() {
                   {p.duration_months && <div className="mt-2 text-xs text-muted">Delivered in {p.duration_months} months</div>}
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

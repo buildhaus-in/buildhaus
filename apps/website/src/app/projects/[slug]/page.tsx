@@ -6,6 +6,7 @@ import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, StatCard, Badge } from "@buildhaus/ui";
 import { inr, sqft } from "@buildhaus/utils";
 import { WEBSITE_URL } from "@/lib/env";
+import { hueForProjectType } from "@/lib/palette";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = createClient();
@@ -40,6 +41,7 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
     .maybeSingle();
 
   if (!project) notFound();
+  const hue = hueForProjectType(project.project_type);
 
   const { data: gallery } = await supabase
     .from("project_gallery")
@@ -83,7 +85,10 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
       <section className="mx-auto max-w-5xl px-5 py-16">
         <Link href="/projects" className="text-xs font-semibold text-brand hover:underline">← All projects</Link>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Badge tone="brand">{project.project_type}</Badge>
+          <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${hue.border} ${hue.bg} ${hue.text}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${hue.dot}`} aria-hidden />
+            {project.project_type}
+          </span>
           {project.package && <Badge tone="muted">{project.package} package</Badge>}
           <Badge tone="muted">{project.city}{project.completion_year && <> · {project.completion_year}</>}</Badge>
         </div>

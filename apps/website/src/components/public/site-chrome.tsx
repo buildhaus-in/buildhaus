@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PORTAL_URL } from "@/lib/env";
+import { SPECTRUM } from "@/lib/palette";
 
 // Shared header/footer for every public, no-login page (home, about,
 // services, services/[slug], packages, packages/[slug], cost-estimator,
@@ -27,9 +28,25 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
+// The thin multi-hue strip that runs across the top of every public page —
+// the brand's own orange plus the site's extended palette (see
+// @/lib/palette), laid out once here in the shared header so it reads as
+// one deliberate signature rather than a decoration repeated per-page.
+function SpectrumStrip() {
+  return (
+    <div className="flex h-1.5 w-full" aria-hidden>
+      <div className="flex-1 bg-brand" />
+      {SPECTRUM.map((h) => (
+        <div key={h.name} className={`flex-1 ${h.dot}`} />
+      ))}
+    </div>
+  );
+}
+
 export function PublicHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur print:hidden">
+      <SpectrumStrip />
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link href="/" aria-label="Buildhaus — home">
           {/* eslint-disable-next-line @next/next/no-img-element -- the
@@ -93,6 +110,7 @@ const FOOTER_COLUMNS: { title: string; links: { href: string; label: string }[] 
 export function PublicFooter() {
   return (
     <footer className="bg-navy print:hidden">
+      <SpectrumStrip />
       <div className="mx-auto max-w-5xl px-5 py-12">
         <div className="grid gap-8 sm:grid-cols-4">
           <div>

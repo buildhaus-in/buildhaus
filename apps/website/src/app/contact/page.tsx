@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card } from "@buildhaus/ui";
+import { hueFor } from "@/lib/palette";
 
 export default function ContactPage() {
   return (
@@ -21,20 +22,20 @@ export default function ContactPage() {
 
       <section className="mx-auto max-w-5xl px-5 pb-16">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <Card>
+          <Card className={`border-t-2 ${hueFor(0).borderT}`}>
             <div className="text-[11px] font-bold uppercase tracking-wide text-sandlight">Office</div>
             <div className="mt-2 text-sm text-ivory">Buildhaus Constructions</div>
             <div className="mt-1 text-sm text-muted">Nellore &amp; Hyderabad</div>
             <div className="mt-1 text-xs text-muted">Serving Andhra Pradesh &amp; Telangana</div>
           </Card>
-          <Card>
+          <Card className={`border-t-2 ${hueFor(1).borderT}`}>
             <div className="text-[11px] font-bold uppercase tracking-wide text-sandlight">Phone & WhatsApp</div>
             <div className="mt-2 text-sm text-ivory">
               <a href="tel:+917328573826" className="hover:text-brand">+91 73285 73826</a>
             </div>
             <div className="mt-1 text-xs text-muted">Mon–Sat, 9:30 AM – 6:30 PM IST</div>
           </Card>
-          <Card>
+          <Card className={`border-t-2 ${hueFor(4).borderT}`}>
             <div className="text-[11px] font-bold uppercase tracking-wide text-sandlight">Email</div>
             <div className="mt-2 text-sm text-ivory">hello@buildhaus.example</div>
             <div className="mt-1 text-xs text-muted">We usually reply within one business day.</div>

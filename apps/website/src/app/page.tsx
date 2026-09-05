@@ -3,6 +3,7 @@ import { createClient } from "@buildhaus/database";
 import { inr, sqft } from "@buildhaus/utils";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { SERVICES } from "./services/data";
+import { CATEGORY_HUE, hueForProjectType, hueFor } from "@/lib/palette";
 
 // Public marketing home. Anonymous-safe: reads only public_projects and
 // published testimonials.
@@ -65,15 +66,19 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl px-5 py-8">
           <div className="text-[11px] font-bold uppercase tracking-widest text-sandlight">What we build</div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {SERVICES.map((s) => (
-              <Link
-                key={s.slug}
-                href={`/services/${s.slug}`}
-                className="rounded-full border border-sky bg-card px-3 py-1.5 text-sm text-sandlight hover:border-brand/50 hover:text-ivory"
-              >
-                {s.title}
-              </Link>
-            ))}
+            {SERVICES.map((s) => {
+              const hue = CATEGORY_HUE[s.slug];
+              return (
+                <Link
+                  key={s.slug}
+                  href={`/services/${s.slug}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border ${hue.border} ${hue.bg} px-3 py-1.5 text-sm font-medium ${hue.text} hover:brightness-95`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${hue.dot}`} aria-hidden />
+                  {s.title}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -87,14 +92,17 @@ export default async function Home() {
       <section className="mx-auto max-w-5xl px-5 py-14">
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { src: "/images/blueprints.jpg", label: "Design", alt: "Architectural floor plans on a table" },
-            { src: "/images/construction-workers.jpg", label: "Build", alt: "Construction workers on site" },
-            { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior" },
+            { src: "/images/blueprints.jpg", label: "Design", alt: "Architectural floor plans on a table", hue: hueFor(0) },
+            { src: "/images/construction-workers.jpg", label: "Build", alt: "Construction workers on site", hue: hueFor(1) },
+            { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior", hue: hueFor(4) },
           ].map((img) => (
             <div key={img.label} className="overflow-hidden rounded-xl2 border border-border">
               {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photos, no optimisation pipeline needed for three static images */}
               <img src={img.src} alt={img.alt} className="aspect-[4/3] w-full object-cover" />
-              <div className="bg-card px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-sandlight">{img.label}</div>
+              <div className={`flex items-center gap-2 border-t-2 ${img.hue.borderT} bg-card px-4 py-2.5`}>
+                <span className={`h-2 w-2 rounded-full ${img.hue.dot}`} aria-hidden />
+                <span className={`text-xs font-bold uppercase tracking-widest ${img.hue.text}`}>{img.label}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -106,12 +114,15 @@ export default async function Home() {
             { title: "Nothing hidden", body: "Every line of cost is in the BOQ before you sign — and it stays visible through the build. No hidden costs. No surprises. Ever." },
             { title: "Precision without compromise", body: "Every structure is built to signed-off drawings, with documented quality checks at each stage — what was checked, what passed, what was resolved." },
             { title: "One point of accountability", body: "Design, procurement and execution under a single contract and a single point of responsibility, from blueprint to handover." },
-          ].map((v) => (
-            <div key={v.title} className="rounded-xl2 border border-border bg-card p-5">
-              <div className="text-sm font-bold text-ivory">{v.title}</div>
-              <p className="mt-2 text-sm text-muted">{v.body}</p>
-            </div>
-          ))}
+          ].map((v, i) => {
+            const hue = hueFor(i + 2);
+            return (
+              <div key={v.title} className={`rounded-xl2 border-l-4 ${hue.borderL} border-y border-r border-border bg-card p-5`}>
+                <div className={`text-sm font-bold ${hue.text}`}>{v.title}</div>
+                <p className="mt-2 text-sm text-muted">{v.body}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -123,9 +134,11 @@ export default async function Home() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p: any) => (
-              <div key={p.id} className="rounded-xl2 border border-border bg-card p-5">
-                <div className="text-xs uppercase tracking-wide text-brand">{p.project_type}{p.package && <> · {p.package}</>}</div>
+            {projects.map((p: any) => {
+              const hue = hueForProjectType(p.project_type);
+              return (
+              <div key={p.id} className={`rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-5`}>
+                <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.project_type}{p.package && <> · {p.package}</>}</div>
                 <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
                 <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
@@ -134,7 +147,8 @@ export default async function Home() {
                   {p.cost_per_sqft && <span>₹{p.cost_per_sqft}/sqft</span>}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

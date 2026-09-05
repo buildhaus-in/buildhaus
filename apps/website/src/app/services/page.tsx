@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card } from "@buildhaus/ui";
 import { SERVICES } from "./data";
+import { CATEGORY_HUE, hueFor } from "@/lib/palette";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -36,15 +37,21 @@ export default function ServicesPage() {
 
       <section className="mx-auto max-w-5xl px-5 pb-14">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SERVICES.map((s) => (
-            <Link key={s.slug} href={`/services/${s.slug}`}>
-              <Card className="h-full transition-colors hover:border-brand/50">
-                <div className="text-sm font-bold text-ivory">{s.title}</div>
-                <p className="mt-2 text-sm text-muted">{s.body}</p>
-                <div className="mt-3 text-xs font-semibold text-brand">Learn more →</div>
-              </Card>
-            </Link>
-          ))}
+          {SERVICES.map((s) => {
+            const hue = CATEGORY_HUE[s.slug];
+            return (
+              <Link key={s.slug} href={`/services/${s.slug}`}>
+                <Card className={`h-full border-l-4 ${hue.borderL} transition-colors hover:brightness-[0.98]`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`h-1.5 w-1.5 rounded-full ${hue.dot}`} aria-hidden />
+                    <div className="text-sm font-bold text-ivory">{s.title}</div>
+                  </div>
+                  <p className="mt-2 text-sm text-muted">{s.body}</p>
+                  <div className={`mt-3 text-xs font-semibold ${hue.text}`}>Learn more →</div>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -52,12 +59,15 @@ export default function ServicesPage() {
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="mb-6 text-xl font-bold text-ivory">How an engagement runs</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {PROCESS_STEPS.map((p) => (
-              <div key={p.step} className="rounded-xl2 border border-border bg-card p-4">
-                <div className="text-sm font-bold text-brand">{p.step}</div>
-                <p className="mt-2 text-xs text-muted">{p.body}</p>
-              </div>
-            ))}
+            {PROCESS_STEPS.map((p, i) => {
+              const hue = hueFor(i);
+              return (
+                <div key={p.step} className={`rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-4`}>
+                  <div className={`text-sm font-bold ${hue.text}`}>{p.step}</div>
+                  <p className="mt-2 text-xs text-muted">{p.body}</p>
+                </div>
+              );
+            })}
           </div>
           <div className="mt-4">
             <Link href="/process" className="text-sm font-semibold text-brand hover:underline">See the full client journey →</Link>

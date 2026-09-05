@@ -3,6 +3,7 @@ import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
+import { hueFor } from "@/lib/palette";
 
 export default async function MaterialsPage() {
   const supabase = createClient();
@@ -39,9 +40,11 @@ export default async function MaterialsPage() {
           <EmptyState title="Material catalogue unavailable" hint="Specifications will appear here once configured." />
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
-            {Array.from(grouped.entries()).map(([category, items]) => (
-              <Card key={category}>
-                <div className="text-sm font-bold text-brand">{category}</div>
+            {Array.from(grouped.entries()).map(([category, items], i) => {
+              const hue = hueFor(i);
+              return (
+              <Card key={category} className={`border-t-2 ${hue.borderT}`}>
+                <div className={`text-sm font-bold ${hue.text}`}>{category}</div>
                 <ul className="mt-3 space-y-3">
                   {items.map((m) => (
                     <li key={m.id} className="border-b border-border pb-2 last:border-0 last:pb-0">
@@ -54,7 +57,8 @@ export default async function MaterialsPage() {
                   ))}
                 </ul>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

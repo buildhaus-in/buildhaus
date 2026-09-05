@@ -4,6 +4,7 @@ import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, Badge } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
+import { TIER_HUE } from "@/lib/palette";
 
 export const metadata: Metadata = {
   title: "Packages",
@@ -73,16 +74,18 @@ export default async function PackagesPage() {
           <EmptyState title="Packages unavailable" hint="Package rates will appear here once configured by the Owner." />
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {packages.map((p: any) => (
-              <Card key={p.id} className={p.key === RECOMMENDED_KEY ? "border-brand/60" : ""}>
+            {packages.map((p: any) => {
+              const hue = TIER_HUE[p.key] ?? TIER_HUE.premium;
+              return (
+              <Card key={p.id} className={`border-t-4 ${hue.borderT}`}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-lg font-bold text-ivory">{p.label}</div>
                   {p.key === RECOMMENDED_KEY && <Badge tone="brand">Recommended</Badge>}
                 </div>
                 {p.series && (
-                  <div className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-sandlight">{p.series}</div>
+                  <div className={`mt-0.5 text-[11px] font-bold uppercase tracking-wide ${hue.text}`}>{p.series}</div>
                 )}
-                <div className="mt-2 text-2xl font-extrabold text-brand">₹{Number(p.rate_per_sqft).toLocaleString("en-IN")}<span className="text-sm font-medium text-muted">/sqft</span></div>
+                <div className={`mt-2 text-2xl font-extrabold ${hue.textStrong}`}>₹{Number(p.rate_per_sqft).toLocaleString("en-IN")}<span className="text-sm font-medium text-muted">/sqft</span></div>
                 <p className="mt-2 text-sm text-muted">{p.description}</p>
 
                 {(p.best_for ?? []).length > 0 && (
@@ -91,7 +94,7 @@ export default async function PackagesPage() {
                     <ul className="mt-2 space-y-1.5">
                       {(p.best_for ?? []).map((b: string) => (
                         <li key={b} className="flex gap-2 text-sm text-sand">
-                          <span className="text-brand">•</span><span>{b}</span>
+                          <span className={hue.text}>•</span><span>{b}</span>
                         </li>
                       ))}
                     </ul>
@@ -124,7 +127,8 @@ export default async function PackagesPage() {
                   View full specification
                 </Link>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -133,15 +137,19 @@ export default async function PackagesPage() {
         <div className="mx-auto max-w-6xl px-5 py-14">
           <h2 className="text-xl font-bold text-ivory">Which package is right for you?</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {(packages ?? []).map((p: any) => (
-              <div key={p.id} className="rounded-xl2 border border-border bg-card p-4">
+            {(packages ?? []).map((p: any) => {
+              const hue = TIER_HUE[p.key] ?? TIER_HUE.premium;
+              return (
+              <div key={p.id} className={`rounded-xl2 border-l-4 ${hue.borderL} border-y border-r border-border bg-card p-4`}>
                 <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${hue.dot}`} aria-hidden />
                   <span className="text-sm font-bold text-ivory">{p.label}</span>
                   {p.key === RECOMMENDED_KEY && <Badge tone="brand">Recommended</Badge>}
                 </div>
                 <p className="mt-1.5 text-xs text-muted">{SELECTION_GUIDE[p.key] ?? p.description}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

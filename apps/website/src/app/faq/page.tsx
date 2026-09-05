@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, EmptyState } from "@buildhaus/ui";
+import { hueFor } from "@/lib/palette";
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
@@ -59,22 +60,28 @@ export default async function FaqPage() {
           <EmptyState title="FAQs unavailable" hint="Published questions will appear here once the Owner adds them." />
         ) : (
           <div className="space-y-8">
-            {Array.from(grouped.entries()).map(([category, items]) => (
+            {Array.from(grouped.entries()).map(([category, items], ci) => {
+              const hue = hueFor(ci);
+              return (
               <div key={category}>
-                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-sandlight">{category}</h2>
-                <div className="overflow-hidden rounded-xl2 border border-border bg-card">
+                <h2 className={`mb-3 flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${hue.text}`}>
+                  <span className={`h-2 w-2 rounded-full ${hue.dot}`} aria-hidden />
+                  {category}
+                </h2>
+                <div className={`overflow-hidden rounded-xl2 border-l-4 ${hue.borderL} border-y border-r border-border bg-card`}>
                   {items.map((f, i) => (
                     <details key={f.id} className={`group px-5 py-4 open:bg-surface/40 ${i > 0 ? "border-t border-border" : ""}`}>
                       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-ivory">
                         {f.question}
-                        <span className="shrink-0 text-brand transition-transform group-open:rotate-45">+</span>
+                        <span className={`shrink-0 ${hue.text} transition-transform group-open:rotate-45`}>+</span>
                       </summary>
                       <p className="mt-3 text-sm text-muted">{f.answer}</p>
                     </details>
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

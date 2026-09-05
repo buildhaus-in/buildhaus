@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card } from "@buildhaus/ui";
+import { hueFor } from "@/lib/palette";
 
 // The two official Buildhaus client journeys from the brand strategy:
 // how an engagement starts (sales journey) and how the build itself runs
@@ -30,18 +31,24 @@ const CONSTRUCTION_JOURNEY: { title: string; body: string }[] = [
   { title: "Final walkthrough & handover", body: "The home is handed over only when it matches what was agreed. Exactly as promised." },
 ];
 
-function JourneyList({ steps }: { steps: { title: string; body: string }[] }) {
+// `hueOffset` staggers the two journey lists (sales vs. construction) onto
+// different starting points in the spectrum, so the two columns read as
+// distinct even though each individually cycles through the same palette.
+function JourneyList({ steps, hueOffset = 0 }: { steps: { title: string; body: string }[]; hueOffset?: number }) {
   return (
     <ol className="space-y-3">
-      {steps.map((s, i) => (
-        <li key={s.title} className="flex gap-4 rounded-xl2 border border-border bg-card p-4">
-          <div className="w-7 shrink-0 text-sm font-bold text-brand">{String(i + 1).padStart(2, "0")}</div>
-          <div>
-            <div className="text-sm font-bold text-ivory">{s.title}</div>
-            <p className="mt-1 text-sm text-muted">{s.body}</p>
-          </div>
-        </li>
-      ))}
+      {steps.map((s, i) => {
+        const hue = hueFor(i + hueOffset);
+        return (
+          <li key={s.title} className={`flex gap-4 rounded-xl2 border-l-4 ${hue.borderL} border-y border-r border-border bg-card p-4`}>
+            <div className={`w-7 shrink-0 text-sm font-bold ${hue.text}`}>{String(i + 1).padStart(2, "0")}</div>
+            <div>
+              <div className="text-sm font-bold text-ivory">{s.title}</div>
+              <p className="mt-1 text-sm text-muted">{s.body}</p>
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -70,7 +77,7 @@ export default function ProcessPage() {
               How an engagement starts — eight steps from first contact to a signed agreement,
               with every cost visible before you commit to anything.
             </p>
-            <JourneyList steps={SALES_JOURNEY} />
+            <JourneyList steps={SALES_JOURNEY} hueOffset={0} />
           </div>
           <div>
             <h2 className="text-xl font-bold text-ivory">How your home gets built</h2>
@@ -78,7 +85,7 @@ export default function ProcessPage() {
               Nine stages from consultation to handover — each one checked, documented and
               reported before the next begins.
             </p>
-            <JourneyList steps={CONSTRUCTION_JOURNEY} />
+            <JourneyList steps={CONSTRUCTION_JOURNEY} hueOffset={2} />
           </div>
         </div>
       </section>
