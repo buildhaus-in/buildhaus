@@ -46,18 +46,38 @@ export default async function Home() {
               Trust. Precision. Delivered as promised.
             </p>
           </div>
-          {/* Stock photo (Unsplash License, free for commercial use) — a
-              generic house-under-construction shot, not a specific Buildhaus
-              project. Swap for a real site photo once the Owner has one;
-              never pair this with copy implying it's an actual Buildhaus
-              build. */}
-          <div className="overflow-hidden rounded-xl2 border border-border">
+          {/* Stock photo (Pexels License, free for commercial use, no
+              attribution required) — a modern glass-and-concrete villa with a
+              private pool, illustrative of the kind of home Buildhaus builds,
+              not a specific Buildhaus project. Swap for a real site photo
+              once the Owner has one; never pair this with copy implying it's
+              an actual Buildhaus build. */}
+          <div className="relative overflow-hidden rounded-xl2 border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photo, no optimisation pipeline needed for a single hero image */}
             <img
               src="/images/hero-house.jpg"
-              alt="A home under construction — illustrative photo, not a specific Buildhaus project"
+              alt="A modern glass and concrete villa with a private pool — illustrative photo, not a specific Buildhaus project"
               className="aspect-[4/3] w-full object-cover"
             />
+            {/* Floating fact chips over the hero photo. Every figure here is a
+                real, already-published Buildhaus fact (same numbers as
+                /about's StatCards) — never an invented stat, unlike a typical
+                stock hero mockup. */}
+            <Link
+              href="/process"
+              className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-navy/80 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-navy/95"
+            >
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[8px]" aria-hidden>▶</span>
+              How we build, stage by stage
+            </Link>
+            <div className="absolute bottom-3 left-3 rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+              <div className="text-lg font-extrabold text-brand">25</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Stages tracked</div>
+            </div>
+            <div className="absolute bottom-3 right-3 rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+              <div className="text-lg font-extrabold text-brand">4</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Transparent packages</div>
+            </div>
           </div>
         </div>
       </section>
