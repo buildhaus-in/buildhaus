@@ -46,17 +46,20 @@ export default async function Home() {
               Trust. Precision. Delivered as promised.
             </p>
           </div>
-          {/* Stock photo (Pexels License, free for commercial use, no
-              attribution required) — a modern glass-and-concrete villa with a
-              private pool, illustrative of the kind of home Buildhaus builds,
-              not a specific Buildhaus project. Swap for a real site photo
-              once the Owner has one; never pair this with copy implying it's
-              an actual Buildhaus build. */}
+          {/* Owner-supplied image (source unconfirmed — appears to be a
+              "sketch-to-render" AI tool's own before/after demo asset rather
+              than a licensed stock photo; the Owner was told this and chose
+              to use it anyway). Split concept sketch / photorealistic render
+              of a modern villa, illustrative of the kind of home Buildhaus
+              builds, not a specific Buildhaus project — never pair with copy
+              implying it's an actual Buildhaus build. Revisit if the source
+              is ever identified as non-free, or swap for a real site photo
+              once the Owner has one. */}
           <div className="relative overflow-hidden rounded-xl2 border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photo, no optimisation pipeline needed for a single hero image */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- decorative photo, no optimisation pipeline needed for a single hero image */}
             <img
               src="/images/hero-house.jpg"
-              alt="A modern glass and concrete villa with a private pool — illustrative photo, not a specific Buildhaus project"
+              alt="A concept sketch resolving into a photorealistic render of a modern villa — illustrative image, not a specific Buildhaus project"
               className="aspect-[4/3] w-full object-cover"
             />
             {/* Floating fact chips over the hero photo. Every figure here is a
@@ -68,7 +71,7 @@ export default async function Home() {
               className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-navy/80 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-navy/95"
             >
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[8px]" aria-hidden>▶</span>
-              How we build, stage by stage
+              Blueprint to build
             </Link>
             <div className="absolute bottom-3 left-3 rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
               <div className="text-lg font-extrabold text-brand">25</div>
