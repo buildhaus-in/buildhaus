@@ -11,19 +11,28 @@ export default async function SiteOperations() {
   const today = new Date().toISOString().slice(0, 10);
 
   const [
-    { data: reports },
+    { data: reports, error: reportsError },
     { count: matReqPending },
     { count: qualityOpen },
     { data: attendanceToday },
   ] = await Promise.all([
     supabase
+      // "engineer(full_name)" is not a real relationship — daily_reports has
+      // no FK literally named "engineer", only engineer_id -> profiles. That
+      // made this query fail outright (PGRST200: no relationship found),
+      // and since the error was never checked, `reports` silently became
+      // undefined and the page rendered as if there were simply no reports —
+      // hiding every submitted report, confirmed live with a real report
+      // from Prasanna Kumar that never appeared here. Now checked below so
+      // a future query break surfaces as a real error, not an empty list.
       .from("daily_reports")
-      .select("id,report_date,status,weather,stage,floor,zone,work_completed,quantity_executed,unit,site_issues,delays,safety_observations,tomorrow_plan,client_instructions,notes,client_visible,returned_reason,submitted_at,approved_at,projects(id,code,name),engineer(full_name),daily_report_labour(category,count),daily_report_materials(material,received,consumed,unit),daily_report_photos(url,caption)")
+      .select("id,report_date,status,weather,stage,floor,zone,work_completed,quantity_executed,unit,site_issues,delays,safety_observations,tomorrow_plan,client_instructions,notes,client_visible,returned_reason,submitted_at,approved_at,projects(id,code,name),engineer:profiles!engineer_id(full_name),daily_report_labour(category,count),daily_report_materials(material,received,consumed,unit),daily_report_photos(url,caption)")
       .order("report_date", { ascending: false }),
     supabase.from("material_requests").select("*", { count: "exact", head: true }).eq("status", "requested"),
     supabase.from("inspections").select("*", { count: "exact", head: true }).in("status", ["pending", "failed", "correction_pending"]),
     supabase.from("labour_attendance").select("present_count").eq("attendance_date", today),
   ]);
+  if (reportsError) throw new Error(`Couldn't load daily reports: ${reportsError.message}`);
 
   const list = reports ?? [];
   const submitted = list.filter((r: any) => r.status === "submitted");
