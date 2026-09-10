@@ -50,6 +50,23 @@ export default async function AboutPage() {
         </p>
       </section>
 
+      {/* Straight from the brand strategy deck (Evakee Studios, "Buildhaus
+          File export.pdf") — the tagline and supporting line the identity
+          was built around, not yet used elsewhere on the site. */}
+      <section className="bg-navy">
+        <div className="mx-auto max-w-3xl px-5 py-12 text-center">
+          <h2 className="text-2xl font-black text-white sm:text-3xl">
+            Building <span className="text-brand">Beyond</span> Expectations.
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-sm text-white/70 sm:text-base">
+            At Buildhaus, we focus on what matters most — strong foundations, precise execution,
+            and complete transparency at every step. From blueprint to handover, we build with
+            discipline, quality, and integrity. Because your dream deserves more than just
+            construction.
+          </p>
+        </div>
+      </section>
+
       <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-3xl px-5 py-14">
           <div className="text-[11px] font-bold uppercase tracking-widest text-sandlight">Why Buildhaus exists</div>
