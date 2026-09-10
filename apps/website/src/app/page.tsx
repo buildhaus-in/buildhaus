@@ -111,17 +111,20 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stock photos (Unsplash License, free for commercial use) —
-          illustrative of the design/build/deliver process in general, not
-          documentation of a specific Buildhaus project. Swap each for a
-          real site/project photo as they become available; the "Featured
-          projects" section below is the one place that must only ever show
-          real, Owner-published project data. */}
+      {/* Design/Build photos extracted from the Owner's own brand strategy
+          deck (Evakee Studios, "Buildhaus File export.pdf") — the Owner's
+          own commissioned photography, not stock. "Build" carries the
+          brand's alternate "Bh" logo lockup baked into the source image
+          (the Owner reviewed this and approved using it as-is). Deliver
+          stays an Unsplash stock photo (illustrative, not a specific
+          Buildhaus project); the "Featured projects" section below is the
+          one place that must only ever show real, Owner-published project
+          data. */}
       <section className="mx-auto max-w-5xl px-5 py-14">
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { src: "/images/blueprints.jpg", label: "Design", alt: "Architectural floor plans on a table", hue: hueFor(0) },
-            { src: "/images/construction-workers.jpg", label: "Build", alt: "Construction workers on site", hue: hueFor(1) },
+            { src: "/images/blueprints.jpg", label: "Design", alt: "An architect reviewing rolled architectural drawings at a desk", hue: hueFor(0) },
+            { src: "/images/construction-workers.jpg", label: "Build", alt: "A construction worker carrying a wooden beam on an RCC framework site, under a tower crane", hue: hueFor(1) },
             { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior", hue: hueFor(4) },
           ].map((img) => (
             <div key={img.label} className="overflow-hidden rounded-xl2 border border-border">
