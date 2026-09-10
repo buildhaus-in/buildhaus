@@ -3,7 +3,7 @@ import { createClient } from "@buildhaus/database";
 import { inr, sqft } from "@buildhaus/utils";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { SERVICES } from "./services/data";
-import { CATEGORY_HUE, hueForProjectType, hueFor } from "@/lib/palette";
+import { hueForProjectType, hueFor, projectTypeLabel } from "@/lib/palette";
 
 // Public marketing home. Anonymous-safe: reads only public_projects and
 // published testimonials.
@@ -97,19 +97,16 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl px-5 py-8">
           <div className="text-[11px] font-bold uppercase tracking-widest text-sandlight">What we build</div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {SERVICES.map((s) => {
-              const hue = CATEGORY_HUE[s.slug];
-              return (
-                <Link
-                  key={s.slug}
-                  href={`/services/${s.slug}`}
-                  className={`inline-flex items-center gap-1.5 rounded-full border ${hue.border} ${hue.bg} px-3 py-1.5 text-sm font-medium ${hue.text} hover:brightness-95`}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${hue.dot}`} aria-hidden />
-                  {s.title}
-                </Link>
-              );
-            })}
+            {SERVICES.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/services/${s.slug}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand/10 px-3 py-1.5 text-sm font-medium text-brand hover:brightness-95"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
+                {s.title}
+              </Link>
+            ))}
           </div>
         </div>
       </section>
@@ -167,10 +164,18 @@ export default async function Home() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((p: any) => {
               const hue = hueForProjectType(p.project_type);
+              // Client-identifying project names (e.g. a family surname)
+              // don't appear on the public homepage teaser — just the build
+              // type ("G+2" for a duplex, per an explicit request — see
+              // @/lib/palette's PROJECT_TYPE_LABEL). The full name still
+              // shows on the project's own /projects/[slug] page.
+              const typeLabel = projectTypeLabel(p.project_type);
               return (
               <div key={p.id} className={`rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-5`}>
-                <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.project_type}{p.package && <> · {p.package}</>}</div>
-                <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
+                {p.package && (
+                  <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.package}</div>
+                )}
+                <div className="mt-1 text-lg font-bold text-ivory">{typeLabel}</div>
                 <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                   <span>{sqft(p.builtup_area_sqft)}</span>
