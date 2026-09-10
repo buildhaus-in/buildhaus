@@ -26,62 +26,70 @@ export default async function Home() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
-          <div>
-            <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
-            <h1 className="mt-3 text-4xl font-black leading-tight text-ivory sm:text-5xl">
-              The home you envision is the home you receive.
-            </h1>
-            <p className="mt-4 max-w-xl text-sand">
-              Buildhaus manages design, estimation, procurement and site execution under one
-              accountable team — with every cost visible and every milestone reported before
-              you have to ask. Clear processes. Honest pricing. Quality without compromise.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Estimate your build</Link>
-              <Link href="/projects" className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">See past projects</Link>
-            </div>
-            <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-muted">
-              Trust. Precision. Delivered as promised.
-            </p>
-          </div>
-          {/* Owner-supplied image (source unconfirmed — appears to be a
-              "sketch-to-render" AI tool's own before/after demo asset rather
-              than a licensed stock photo; the Owner was told this and chose
-              to use it anyway). Split concept sketch / photorealistic render
-              of a modern villa, illustrative of the kind of home Buildhaus
-              builds, not a specific Buildhaus project — never pair with copy
-              implying it's an actual Buildhaus build. Revisit if the source
-              is ever identified as non-free, or swap for a real site photo
-              once the Owner has one. */}
-          <div className="relative overflow-hidden rounded-xl2 border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element -- decorative photo, no optimisation pipeline needed for a single hero image */}
-            <img
-              src="/images/hero-house.jpg"
-              alt="A concept sketch resolving into a photorealistic render of a modern villa — illustrative image, not a specific Buildhaus project"
-              className="aspect-[4/3] w-full object-cover"
-            />
-            {/* Floating fact chips over the hero photo. Every figure here is a
-                real, already-published Buildhaus fact (same numbers as
-                /about's StatCards) — never an invented stat, unlike a typical
-                stock hero mockup. */}
-            <Link
-              href="/process"
-              className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-navy/80 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-navy/95"
-            >
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[8px]" aria-hidden>▶</span>
-              Blueprint to build
-            </Link>
-            <div className="absolute bottom-3 left-3 rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <section className="mx-auto max-w-5xl px-5 py-10 sm:py-16">
+        {/* Owner-supplied image (source unconfirmed — appears to be a
+            "sketch-to-render" AI tool's own before/after demo asset rather
+            than a licensed stock photo; the Owner was told this and chose
+            to use it anyway). Split concept sketch / photorealistic render
+            of a modern villa, illustrative of the kind of home Buildhaus
+            builds, not a specific Buildhaus project — never pair with copy
+            implying it's an actual Buildhaus build. Revisit if the source
+            is ever identified as non-free, or swap for a real site photo
+            once the Owner has one.
+
+            Shown at its full, uncropped size (`w-full h-auto`, no
+            object-cover) per an explicit "I want full pic" request — the
+            headline/CTA card below overlaps its bottom edge via a negative
+            margin instead of a semi-transparent scrim painted over the
+            photo, so the sketch/render split stays fully visible and the
+            text never gets clipped on short mobile viewports. */}
+        <div className="relative overflow-hidden rounded-xl2 border border-border">
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative photo, no optimisation pipeline needed for a single hero image */}
+          <img
+            src="/images/hero-house.jpg"
+            alt="A concept sketch resolving into a photorealistic render of a modern villa — illustrative image, not a specific Buildhaus project"
+            className="block w-full h-auto"
+          />
+          {/* Floating fact chips over the visible photo. Every figure here is
+              a real, already-published Buildhaus fact (same numbers as
+              /about's StatCards) — never an invented stat, unlike a typical
+              stock hero mockup. */}
+          <Link
+            href="/process"
+            className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-navy/80 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-navy/95"
+          >
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[8px]" aria-hidden>▶</span>
+            Blueprint to build
+          </Link>
+          <div className="absolute right-3 top-3 flex flex-col gap-1.5 sm:flex-row sm:gap-2">
+            <div className="rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
               <div className="text-lg font-extrabold text-brand">25</div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Stages tracked</div>
             </div>
-            <div className="absolute bottom-3 right-3 rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+            <div className="rounded-xl2 bg-card/95 px-3 py-2 shadow-lg backdrop-blur-sm">
               <div className="text-lg font-extrabold text-brand">4</div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Transparent packages</div>
             </div>
           </div>
+        </div>
+
+        <div className="relative z-10 -mt-14 mx-3 rounded-xl2 bg-navy p-5 shadow-xl sm:-mt-20 sm:mx-6 sm:p-8 lg:-mt-24 lg:p-10">
+          <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
+          <h1 className="mt-2 max-w-2xl text-2xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
+            The home you envision is the home you receive.
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-white/75 sm:text-base">
+            Buildhaus manages design, estimation, procurement and site execution under one
+            accountable team — with every cost visible and every milestone reported before
+            you have to ask. Clear processes. Honest pricing. Quality without compromise.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Estimate your build</Link>
+            <Link href="/projects" className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">See past projects</Link>
+          </div>
+          <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-white/50">
+            Trust. Precision. Delivered as promised.
+          </p>
         </div>
       </section>
 
