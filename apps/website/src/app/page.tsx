@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { inr, sqft } from "@buildhaus/utils";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { MrHaus } from "@/components/public/mr-haus";
 import { SERVICES } from "./services/data";
 import { hueForProjectType, hueFor, projectTypeLabel } from "@/lib/palette";
 
@@ -73,7 +74,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="relative z-10 -mt-14 mx-3 rounded-xl2 bg-navy p-5 shadow-xl sm:-mt-20 sm:mx-6 sm:p-8 lg:-mt-24 lg:flex lg:items-end lg:justify-between lg:gap-8 lg:p-10">
+        <div className="relative z-10 -mt-14 mx-3 flex flex-col rounded-xl2 bg-navy p-5 shadow-xl sm:-mt-20 sm:mx-6 sm:p-8 lg:-mt-24 lg:flex-row lg:items-end lg:justify-between lg:gap-8 lg:p-10">
           <div>
             <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
             <h1 className="mt-2 max-w-2xl text-2xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
@@ -92,22 +93,17 @@ export default async function Home() {
               Trust. Precision. Delivered as promised.
             </p>
           </div>
-          {/* Mr Haus — the Owner's own commissioned brand mascot
-              (BuildHaus_Mr_Haus_Mascot_Red_Navy_Transparent.png, wearing the
-              brand's own "3" icon on the hard hat). He stands in the hero
-              card rather than the closing CTA band, per "I can see him only
-              in main page bottom, I'd prefer somewhere he is more visible" —
-              this is the first thing on the page. A normal flex child (not
-              an absolutely-positioned overlay) so the card grows to his full
-              height instead of cropping his head off, bottom-aligned so he
-              stands on the card's lower edge, and hidden below `lg` so he
-              never squeezes the headline and buttons on smaller screens. */}
-          {/* eslint-disable-next-line @next/next/no-img-element -- brand mascot art, no optimisation pipeline needed for one static image */}
-          <img
-            src="/images/mascot-mr-haus.png"
-            alt="Mr Haus, the Buildhaus mascot — an elephant site engineer in a Buildhaus hard hat holding rolled drawings"
-            className="pointer-events-none hidden h-72 w-auto shrink-0 select-none lg:block"
-          />
+          {/* Mr Haus stands in the hero card rather than the closing CTA
+              band, per "I can see him only in main page bottom, I'd prefer
+              somewhere he is more visible" — this is the first thing on the
+              page. A normal flex child (not an absolutely-positioned
+              overlay) so the card grows to his full height instead of
+              cropping his head off. He now shows at every width: on phones
+              and tablets the card stacks, so he sits under the copy and
+              right-aligned at a smaller size, which keeps the headline and
+              buttons at full width; from `lg` he stands beside them,
+              bottom-aligned and much larger. */}
+          <MrHaus className="mt-4 h-40 self-end sm:h-48 lg:mt-0 lg:h-80 xl:h-96" />
         </div>
       </section>
 
