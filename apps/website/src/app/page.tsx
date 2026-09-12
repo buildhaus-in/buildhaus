@@ -73,23 +73,41 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="relative z-10 -mt-14 mx-3 rounded-xl2 bg-navy p-5 shadow-xl sm:-mt-20 sm:mx-6 sm:p-8 lg:-mt-24 lg:p-10">
-          <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
-          <h1 className="mt-2 max-w-2xl text-2xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
-            The home you envision is the home you receive.
-          </h1>
-          <p className="mt-3 max-w-xl text-sm text-white/75 sm:text-base">
-            Buildhaus manages design, estimation, procurement and site execution under one
-            accountable team — with every cost visible and every milestone reported before
-            you have to ask. Clear processes. Honest pricing. Quality without compromise.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Estimate your build</Link>
-            <Link href="/projects" className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">See past projects</Link>
+        <div className="relative z-10 -mt-14 mx-3 rounded-xl2 bg-navy p-5 shadow-xl sm:-mt-20 sm:mx-6 sm:p-8 lg:-mt-24 lg:flex lg:items-end lg:justify-between lg:gap-8 lg:p-10">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-widest text-brand">Hyderabad &amp; Nellore · Andhra Pradesh &amp; Telangana</div>
+            <h1 className="mt-2 max-w-2xl text-2xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
+              The home you envision is the home you receive.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm text-white/75 sm:text-base">
+              Buildhaus manages design, estimation, procurement and site execution under one
+              accountable team — with every cost visible and every milestone reported before
+              you have to ask. Clear processes. Honest pricing. Quality without compromise.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Estimate your build</Link>
+              <Link href="/projects" className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">See past projects</Link>
+            </div>
+            <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-white/50">
+              Trust. Precision. Delivered as promised.
+            </p>
           </div>
-          <p className="mt-5 text-xs font-semibold uppercase tracking-widest text-white/50">
-            Trust. Precision. Delivered as promised.
-          </p>
+          {/* Mr Haus — the Owner's own commissioned brand mascot
+              (BuildHaus_Mr_Haus_Mascot_Red_Navy_Transparent.png, wearing the
+              brand's own "3" icon on the hard hat). He stands in the hero
+              card rather than the closing CTA band, per "I can see him only
+              in main page bottom, I'd prefer somewhere he is more visible" —
+              this is the first thing on the page. A normal flex child (not
+              an absolutely-positioned overlay) so the card grows to his full
+              height instead of cropping his head off, bottom-aligned so he
+              stands on the card's lower edge, and hidden below `lg` so he
+              never squeezes the headline and buttons on smaller screens. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- brand mascot art, no optimisation pipeline needed for one static image */}
+          <img
+            src="/images/mascot-mr-haus.png"
+            alt="Mr Haus, the Buildhaus mascot — an elephant site engineer in a Buildhaus hard hat holding rolled drawings"
+            className="pointer-events-none hidden h-72 w-auto shrink-0 select-none lg:block"
+          />
         </div>
       </section>
 
@@ -212,17 +230,9 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Mr Haus — the Owner's own commissioned brand mascot
-          (BuildHaus_Mr_Haus_Mascot_Red_Navy_Transparent.png, wearing the
-          brand's own "3" icon on the hard hat). Sits in the closing CTA
-          band, where a playful marketing touch fits; the sections above
-          stay straight-faced. He's a normal flex child (not absolutely
-          positioned) so the band grows to his full height instead of
-          cropping his head off, and he's hidden below `lg` so he never
-          squeezes the heading and buttons on smaller screens. */}
       <section className="bg-navy">
         <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-5 px-5 py-14 sm:flex-row sm:items-center">
-          <div className="sm:max-w-md">
+          <div className="sm:max-w-lg">
             <h2 className="text-2xl font-bold text-white">Not just construction, but confidence.</h2>
             <p className="mt-2 max-w-xl text-sm text-white/70">
               Most construction companies will tell you what they build. We will show you how —
@@ -233,12 +243,6 @@ export default async function Home() {
             <Link href="/process" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">See how we work</Link>
             <Link href="/enquiry" className="rounded-lg border border-white/25 px-5 py-3 font-semibold text-white hover:bg-white/10">Send an enquiry</Link>
           </div>
-          {/* eslint-disable-next-line @next/next/no-img-element -- brand mascot art, no optimisation pipeline needed for one static image */}
-          <img
-            src="/images/mascot-mr-haus.png"
-            alt="Mr Haus, the Buildhaus mascot — an elephant site engineer in a Buildhaus hard hat holding rolled drawings"
-            className="pointer-events-none hidden h-64 w-auto shrink-0 select-none self-end lg:block"
-          />
         </div>
       </section>
 
