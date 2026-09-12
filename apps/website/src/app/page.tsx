@@ -212,9 +212,17 @@ export default async function Home() {
         </section>
       )}
 
+      {/* Mr Haus — the Owner's own commissioned brand mascot
+          (BuildHaus_Mr_Haus_Mascot_Red_Navy_Transparent.png, wearing the
+          brand's own "3" icon on the hard hat). Sits in the closing CTA
+          band, where a playful marketing touch fits; the sections above
+          stay straight-faced. He's a normal flex child (not absolutely
+          positioned) so the band grows to his full height instead of
+          cropping his head off, and he's hidden below `lg` so he never
+          squeezes the heading and buttons on smaller screens. */}
       <section className="bg-navy">
         <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-5 px-5 py-14 sm:flex-row sm:items-center">
-          <div>
+          <div className="sm:max-w-md">
             <h2 className="text-2xl font-bold text-white">Not just construction, but confidence.</h2>
             <p className="mt-2 max-w-xl text-sm text-white/70">
               Most construction companies will tell you what they build. We will show you how —
@@ -225,6 +233,12 @@ export default async function Home() {
             <Link href="/process" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">See how we work</Link>
             <Link href="/enquiry" className="rounded-lg border border-white/25 px-5 py-3 font-semibold text-white hover:bg-white/10">Send an enquiry</Link>
           </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- brand mascot art, no optimisation pipeline needed for one static image */}
+          <img
+            src="/images/mascot-mr-haus.png"
+            alt="Mr Haus, the Buildhaus mascot — an elephant site engineer in a Buildhaus hard hat holding rolled drawings"
+            className="pointer-events-none hidden h-64 w-auto shrink-0 select-none self-end lg:block"
+          />
         </div>
       </section>
 
