@@ -45,7 +45,7 @@ export default async function Home() {
             margin instead of a semi-transparent scrim painted over the
             photo, so the sketch/render split stays fully visible and the
             text never gets clipped on short mobile viewports. */}
-        <Tilt className="relative overflow-hidden rounded-xl2 border border-border" max={4} lift={4}>
+        <Tilt className="relative overflow-hidden rounded-xl2 border border-border" max={9} lift={8}>
           {/* eslint-disable-next-line @next/next/no-img-element -- decorative photo, no optimisation pipeline needed for a single hero image */}
           <img
             src="/images/hero-house.jpg"
@@ -143,7 +143,7 @@ export default async function Home() {
             { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior", hue: hueFor(4) },
           ].map((img, i) => (
             <Reveal key={img.label} delay={i * 90}>
-              <Tilt className="h-full overflow-hidden rounded-xl2 border border-border" max={7}>
+              <Tilt className="h-full overflow-hidden rounded-xl2 border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photos, no optimisation pipeline needed for three static images */}
                 <img src={img.src} alt={img.alt} className="aspect-[4/3] w-full object-cover" />
                 <div className={`flex items-center gap-2 border-t-2 ${img.hue.borderT} bg-card px-4 py-2.5`}>
@@ -165,10 +165,12 @@ export default async function Home() {
           ].map((v, i) => {
             const hue = hueFor(i + 2);
             return (
-              <div key={v.title} className={`rounded-xl2 border-l-4 ${hue.borderL} border-y border-r border-border bg-card p-5`}>
-                <div className={`text-sm font-bold ${hue.text}`}>{v.title}</div>
-                <p className="mt-2 text-sm text-muted">{v.body}</p>
-              </div>
+              <Reveal key={v.title} delay={i * 90}>
+                <Tilt className={`h-full rounded-xl2 border-l-4 ${hue.borderL} border-y border-r border-border bg-card p-5`}>
+                  <div className={`text-sm font-bold ${hue.text}`}>{v.title}</div>
+                  <p className="mt-2 text-sm text-muted">{v.body}</p>
+                </Tilt>
+              </Reveal>
             );
           })}
         </div>
@@ -192,7 +194,7 @@ export default async function Home() {
               const typeLabel = projectTypeLabel(p.project_type);
               return (
               <Reveal key={p.id} delay={i * 90}>
-              <Tilt className={`h-full rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-5`} max={5} lift={4}>
+              <Tilt className={`h-full rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-5`}>
                 {p.package && (
                   <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.package}</div>
                 )}

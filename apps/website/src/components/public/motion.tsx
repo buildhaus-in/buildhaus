@@ -29,20 +29,24 @@ function usePrefersReducedMotion(): boolean {
 /**
  * Tilts its contents toward the cursor in 3D. Desktop/fine-pointer only.
  *
- * `max` is the strongest rotation in degrees at the very corner of the
- * element — keep it small (4-8) or the page reads as a gimmick rather than
- * as depth.
+ * `max` scales the rotation (the corner of the element reaches roughly
+ * `max` degrees). The first pass used 4-6 and was invisible in practice
+ * ("unable to see it") — these defaults are deliberately assertive enough
+ * to notice, paired with a lift, a slight scale and a shadow that tracks
+ * the tilt.
  */
 export function Tilt({
   children,
   className,
-  max = 6,
-  lift = 6,
+  max = 12,
+  lift = 10,
+  scale = 1.02,
 }: {
   children: ReactNode;
   className?: string;
   max?: number;
   lift?: number;
+  scale?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = usePrefersReducedMotion();
@@ -54,8 +58,14 @@ export function Tilt({
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     let frame = 0;
-    const apply = (rx: number, ry: number, z: number) => {
-      el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translate3d(0,${-z}px,0)`;
+    // A shadow that deepens with the tilt is what actually sells the
+    // depth — rotation alone, at tasteful angles, is easy to miss.
+    const restShadow = getComputedStyle(el).boxShadow;
+    const apply = (rx: number, ry: number, z: number, sc: number, active: boolean) => {
+      el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translate3d(0,${-z}px,0) scale(${sc})`;
+      el.style.boxShadow = active
+        ? `${-ry * 1.6}px ${rx * 1.6 + 18}px 40px rgba(11, 38, 58, 0.28)`
+        : restShadow;
     };
 
     const onMove = (e: PointerEvent) => {
@@ -63,16 +73,21 @@ export function Tilt({
       frame = requestAnimationFrame(() => {
         frame = 0;
         const r = el.getBoundingClientRect();
-        // -0.5 .. 0.5 from the element's centre, on both axes.
-        const px = (e.clientX - r.left) / r.width - 0.5;
-        const py = (e.clientY - r.top) / r.height - 0.5;
-        apply(-py * max * 2, px * max * 2, lift);
+        // -0.5 .. 0.5 from the element's centre, on both axes. Clamped
+        // because the rect is measured a frame after the pointer event:
+        // if the page scrolls in between, the stale clientY against a
+        // fresh rect can land far outside the element and spin the card
+        // (observed: rotateX(-406deg) when a scroll raced a pointermove).
+        const clamp = (n: number) => Math.max(-0.5, Math.min(0.5, n));
+        const px = clamp((e.clientX - r.left) / r.width - 0.5);
+        const py = clamp((e.clientY - r.top) / r.height - 0.5);
+        apply(-py * max * 2, px * max * 2, lift, scale, true);
       });
     };
     const onLeave = () => {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
-      apply(0, 0, 0);
+      apply(0, 0, 0, 1, false);
     };
 
     el.addEventListener("pointermove", onMove);
@@ -82,13 +97,17 @@ export function Tilt({
       el.removeEventListener("pointerleave", onLeave);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [reduced, max, lift]);
+  }, [reduced, max, lift, scale]);
 
   return (
     <div
       ref={ref}
       className={className}
-      style={{ transition: "transform 300ms cubic-bezier(0.22, 1, 0.36, 1)", willChange: "transform" }}
+      style={{
+        transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease",
+        willChange: "transform",
+        transformStyle: "preserve-3d",
+      }}
     >
       {children}
     </div>
