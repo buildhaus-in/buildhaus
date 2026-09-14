@@ -3,6 +3,7 @@ import { createClient } from "@buildhaus/database";
 import { inr, sqft } from "@buildhaus/utils";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { MrHaus } from "@/components/public/mr-haus";
+import { Tilt, Reveal } from "@/components/public/motion";
 import { SERVICES } from "./services/data";
 import { hueForProjectType, hueFor, projectTypeLabel } from "@/lib/palette";
 
@@ -44,7 +45,7 @@ export default async function Home() {
             margin instead of a semi-transparent scrim painted over the
             photo, so the sketch/render split stays fully visible and the
             text never gets clipped on short mobile viewports. */}
-        <div className="relative overflow-hidden rounded-xl2 border border-border">
+        <Tilt className="relative overflow-hidden rounded-xl2 border border-border" max={4} lift={4}>
           {/* eslint-disable-next-line @next/next/no-img-element -- decorative photo, no optimisation pipeline needed for a single hero image */}
           <img
             src="/images/hero-house.jpg"
@@ -72,7 +73,7 @@ export default async function Home() {
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted">Transparent packages</div>
             </div>
           </div>
-        </div>
+        </Tilt>
 
         <div className="relative z-10 -mt-14 mx-3 flex flex-col rounded-xl2 bg-navy p-5 shadow-xl sm:-mt-20 sm:mx-6 sm:p-8 lg:-mt-24 lg:flex-row lg:items-end lg:justify-between lg:gap-8 lg:p-10">
           <div>
@@ -140,15 +141,17 @@ export default async function Home() {
             { src: "/images/blueprints.jpg", label: "Design", alt: "An architect reviewing rolled architectural drawings at a desk", hue: hueFor(0) },
             { src: "/images/construction-workers.jpg", label: "Build", alt: "A construction worker carrying a wooden beam on an RCC framework site, under a tower crane", hue: hueFor(1) },
             { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior", hue: hueFor(4) },
-          ].map((img) => (
-            <div key={img.label} className="overflow-hidden rounded-xl2 border border-border">
-              {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photos, no optimisation pipeline needed for three static images */}
-              <img src={img.src} alt={img.alt} className="aspect-[4/3] w-full object-cover" />
-              <div className={`flex items-center gap-2 border-t-2 ${img.hue.borderT} bg-card px-4 py-2.5`}>
-                <span className={`h-2 w-2 rounded-full ${img.hue.dot}`} aria-hidden />
-                <span className={`text-xs font-bold uppercase tracking-widest ${img.hue.text}`}>{img.label}</span>
-              </div>
-            </div>
+          ].map((img, i) => (
+            <Reveal key={img.label} delay={i * 90}>
+              <Tilt className="h-full overflow-hidden rounded-xl2 border border-border" max={7}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photos, no optimisation pipeline needed for three static images */}
+                <img src={img.src} alt={img.alt} className="aspect-[4/3] w-full object-cover" />
+                <div className={`flex items-center gap-2 border-t-2 ${img.hue.borderT} bg-card px-4 py-2.5`}>
+                  <span className={`h-2 w-2 rounded-full ${img.hue.dot}`} aria-hidden />
+                  <span className={`text-xs font-bold uppercase tracking-widest ${img.hue.text}`}>{img.label}</span>
+                </div>
+              </Tilt>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -179,7 +182,7 @@ export default async function Home() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p: any) => {
+            {projects.map((p: any, i: number) => {
               const hue = hueForProjectType(p.project_type);
               // Client-identifying project names (e.g. a family surname)
               // don't appear on the public homepage teaser — just the build
@@ -188,7 +191,8 @@ export default async function Home() {
               // shows on the project's own /projects/[slug] page.
               const typeLabel = projectTypeLabel(p.project_type);
               return (
-              <div key={p.id} className={`rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-5`}>
+              <Reveal key={p.id} delay={i * 90}>
+              <Tilt className={`h-full rounded-xl2 border-t-2 ${hue.borderT} border-x border-b border-border bg-card p-5`} max={5} lift={4}>
                 {p.package && (
                   <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.package}</div>
                 )}
@@ -199,7 +203,8 @@ export default async function Home() {
                   <span>~{inr(p.approx_cost)}</span>
                   {p.cost_per_sqft && <span>₹{p.cost_per_sqft}/sqft</span>}
                 </div>
-              </div>
+              </Tilt>
+              </Reveal>
               );
             })}
           </div>
