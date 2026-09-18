@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
-import { inr, sqft } from "@buildhaus/utils";
+import { sqft } from "@buildhaus/utils";
 import { EmptyState } from "@buildhaus/ui";
 import { Card } from "@buildhaus/ui";
 import { hueForProjectType } from "@/lib/palette";
@@ -10,7 +10,7 @@ export default async function ProjectsPage() {
   const supabase = createClient();
   const { data: projects } = await supabase
     .from("public_projects")
-    .select("id,slug,name,city,project_type,builtup_area_sqft,approx_cost,cost_per_sqft,completion_year,package,duration_months")
+    .select("id,slug,name,city,project_type,builtup_area_sqft,completion_year,package,duration_months")
     .eq("is_public", true)
     .order("is_featured", { ascending: false })
     .order("completion_year", { ascending: false });
@@ -46,8 +46,6 @@ export default async function ProjectsPage() {
                   <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                     <span>{sqft(p.builtup_area_sqft)}</span>
-                    <span>~{inr(p.approx_cost)}</span>
-                    {p.cost_per_sqft && <span>₹{p.cost_per_sqft}/sqft</span>}
                   </div>
                   {p.duration_months && <div className="mt-2 text-xs text-muted">Delivered in {p.duration_months} months</div>}
                 </Card>

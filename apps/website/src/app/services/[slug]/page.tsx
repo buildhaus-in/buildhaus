@@ -51,7 +51,7 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
   if (service.projectType) {
     const { data } = await supabase
       .from("public_projects")
-      .select("id,slug,name,city,builtup_area_sqft,approx_cost,completion_year")
+      .select("id,slug,name,city,builtup_area_sqft,completion_year")
       .eq("is_public", true)
       .eq("project_type", service.projectType)
       .limit(3);
@@ -244,7 +244,6 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
                     <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                       <span>{sqft(p.builtup_area_sqft)}</span>
-                      <span>~{inr(p.approx_cost)}</span>
                     </div>
                   </Card>
                 </Link>

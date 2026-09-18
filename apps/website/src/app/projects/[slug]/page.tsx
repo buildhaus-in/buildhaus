@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, StatCard, Badge } from "@buildhaus/ui";
-import { inr, sqft } from "@buildhaus/utils";
+import { sqft } from "@buildhaus/utils";
 import { WEBSITE_URL } from "@/lib/env";
 import { hueForProjectType } from "@/lib/palette";
 
@@ -104,8 +104,6 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
           <StatCard label="Built-up area" value={sqft(project.builtup_area_sqft)} tone="sand" />
           {project.plot_area_sqft && <StatCard label="Plot area" value={sqft(project.plot_area_sqft)} tone="sand" />}
           {project.floors && <StatCard label="Floors" value={project.floors} tone="sand" />}
-          <StatCard label="Approx. cost" value={inr(project.approx_cost)} tone="brand" />
-          {project.cost_per_sqft && <StatCard label="Cost / sqft" value={`₹${project.cost_per_sqft}`} tone="sand" />}
           {project.duration_months && <StatCard label="Duration" value={`${project.duration_months} months`} tone="sand" />}
         </div>
       </section>
