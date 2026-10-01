@@ -5,8 +5,8 @@
 // ("what we build has different colour for independent houses n villas
 // make it into one colour only", plus the earlier "remove those colour
 // strips, I don't want colours"). Every page across the site now shows a
-// single colour: the brand's own accent orange (#E04D22, see
-// packages/brand/src/colors.ts). This file does NOT touch that shared
+// single colour: the brand's own accent orange (#E24625, from the
+// brochure — see packages/brand/src/colors.ts). This file does NOT touch that shared
 // package, so the portal dashboard is unaffected either way.
 //
 // Every function/lookup below is KEPT (rather than deleted and every call

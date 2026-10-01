@@ -64,7 +64,7 @@ export function Tilt({
     const apply = (rx: number, ry: number, z: number, sc: number, active: boolean) => {
       el.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translate3d(0,${-z}px,0) scale(${sc})`;
       el.style.boxShadow = active
-        ? `${-ry * 1.6}px ${rx * 1.6 + 18}px 40px rgba(11, 38, 58, 0.28)`
+        ? `${-ry * 1.6}px ${rx * 1.6 + 18}px 40px rgba(31, 24, 22, 0.28)`
         : restShadow;
     };
 

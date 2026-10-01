@@ -4,24 +4,24 @@
 
 :root {
   /* BuildHaus palette (mirrors colors.ts for raw CSS use) */
-  --bg: #f5f6f6;
-  --surface: #edefef;
+  --bg: #f0f0f1;
+  --surface: #e7e7e8;
   --card: #ffffff;
-  --border: #dcdeda;
-  --brand: #e04d22;
-  --sand: #4a5b6e;
-  --sand-light: #33465c;
-  --ivory: #0b263a;
+  --border: #dcdce0;
+  --brand: #e24625;
+  --sand: #5b5c62;
+  --sand-light: #2e2b2b;
+  --ivory: #18191b;
   --ok: #1f7a4d;
   --warn: #a87400;
   --danger: #b3261e;
-  --muted: #7a8694;
-  --ink: #24384f;
-  --navy: #0b263a;
-  --royal: #273b85;
-  --sky: #abcfdf;
-  --sky-soft: #e3eef4;
-  --stone: #c7c8c2;
+  --muted: #66666c;
+  --ink: #2e2b2b;
+  --navy: #1f1816;
+  --royal: #9f1211;
+  --sky: #f4a28c;
+  --sky-soft: #fce9e4;
+  --stone: #c2b19c;
   --font-sans: "Inter", -apple-system, system-ui, sans-serif;
   --font-display: "Poppins", var(--font-sans);
 }

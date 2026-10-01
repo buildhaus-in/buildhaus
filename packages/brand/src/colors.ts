@@ -1,50 +1,53 @@
 // The single source of truth for the BuildHaus palette. Both the Tailwind
-// preset and anything that can't use Tailwind classes (PDF generation, email
-// templates, canvas/chart code) read from here rather than hardcoding a hex.
+// preset (website AND portal) and anything that can't use Tailwind classes
+// (quotation PDF, email templates, canvas/chart code) read from here rather
+// than hardcoding a hex.
 //
-// Palette source: "Buildhaus File export.pdf" (Evakee Branding Studio, 2026)
-// — swatch page hexes: Vibrant Orange #F15623, Deep Navy Blue #273B85,
-// Sky Blue #ABCFDF, Light Stone Gray #C7C8C2, Soft White #F5F6F6, plus the
-// dark panel navy sampled at #0B263A (its swatch label reads #304EA2 but the
-// fill used across the identity is #0B263A — we follow the used fill; the
-// labelled #304EA2 is kept as `royalAlt`).
+// Palette source (2026-10-01): the Owner's print collateral in Downloads/ —
+// Buildhaus_Brochure.pdf, Buildhaus_Pricing_Catalog.pdf, Buildhaus
+// Quotation.pdf, "buildhaus Floor plan presentation template.pdf" and
+// "buildhaus Company Profile Presentation .pdf". Every value was sampled from
+// those PDFs' own fills and text colours, per "coordinate [the website] with
+// the brochures and other files":
+//   orange #E24625 — full-bleed brochure/pricing pages, headings, accents
+//   grey   #F0F0F1 — page grounds;  #E7E7E8 — inset panels
+//   ink    #18191B — headings/body; #5B5C62 — secondary text (pricing)
+//   rule   #DCDCE0 — table hairlines; tint #FCE9E4 — highlighted rows
+//   red    #9F1211 — pricing accent;  warm black #1F1816 + taupe #C2B19C —
+//          the floor-plan template's side panel
+// The collateral never uses navy, so dark panels use the floor-plan warm
+// black. The logo SVGs keep their own embedded #E04D22 (official asset files,
+// visually identical to #E24625) — don't recolour them.
 //
-// `brand`/`brandSoft` were updated to #E04D22 to match the actual shipped
-// logo vectors ("Buildhaus Logo File/", 2026) — those files' own embedded
-// swatch is #E04D22 (ink #221A16, a warm near-black distinct from this
-// palette's navy `ivory`/`ink`, ships only on the logo mark itself and isn't
-// applied here — the identity's own text/panel system stays navy-based).
-// Every other token below is unchanged from the original brand sheet.
-//
-// The identity is LIGHT-first: soft-white grounds, navy ink, orange accents.
-// Token NAMES are kept from the previous dark theme so existing classes
-// (bg-bg, text-ivory, text-sand…) restyle without a sweep: `ivory` now means
-// "heading ink" (dark navy) and `ink` means "body ink". Semantic tones
-// (ok/warn/danger) are tuned for contrast on light grounds; danger is a true
-// red so it never reads as the brand orange.
+// This replaced the earlier navy-based palette from the Evakee brand sheet
+// ("Buildhaus File export.pdf": navy #0B263A, royal #273B85, sky #ABCFDF…).
+// Token NAMES are kept so every existing class (bg-navy, text-ivory,
+// bg-sky-soft…) restyles without a sweep: `navy` = dark panel (warm black),
+// `ivory` = heading ink, `ink` = body ink, `royal` = deep red accent,
+// `sky`/`skySoft` = orange tints. Semantic tones (ok/warn/danger) unchanged.
 export const colors = {
-  bg: "#F5F6F6",        // Soft White — page ground
-  surface: "#EDEFEF",   // input fields / subtle panels on white cards
+  bg: "#F0F0F1",        // brochure grey — page ground
+  surface: "#E7E7E8",   // input fields / subtle panels on white cards
   card: "#FFFFFF",      // elevated cards
-  border: "#DCDEDA",    // hairlines, derived from Light Stone Gray
-  brand: "#E04D22",      // logo-vector accent orange (see header note)
-  brandSoft: "#E04D2215",
-  sand: "#4A5B6E",      // secondary text (slate navy)
-  sandLight: "#33465C", // emphasised secondary text
-  ivory: "#0B263A",     // headings — Deep Panel Navy
+  border: "#DCDCE0",    // pricing-table hairlines
+  brand: "#E24625",     // brochure orange
+  brandSoft: "#E2462515",
+  sand: "#5B5C62",      // secondary text (pricing catalogue)
+  sandLight: "#2E2B2B", // emphasised secondary text
+  ivory: "#18191B",     // headings — brochure ink
   ok: "#1F7A4D",
   warn: "#A87400",
   danger: "#B3261E",
-  muted: "#7A8694",
-  ink: "#24384F",       // body text
+  muted: "#66666C",     // the PDFs' #99999B fails AA; darkened to ≥4.8:1
+  ink: "#2E2B2B",       // body text
 
-  // Brand blues beyond the ground/ink mapping
-  navy: "#0B263A",      // dark panels, footer, hero bands
-  royal: "#273B85",     // Deep Navy Blue (indigo) — headline/link accents
-  royalAlt: "#304EA2",  // labelled "Royal Blue" in the brand sheet
-  sky: "#ABCFDF",       // Sky Blue — tints, section bands
-  skySoft: "#E3EEF4",   // derived light tint of sky
-  stone: "#C7C8C2",     // Light Stone Gray
+  // Beyond the ground/ink mapping (names kept from the navy-era palette)
+  navy: "#1F1816",      // dark panels, footer — floor-plan warm black
+  royal: "#9F1211",     // deep red accent (pricing catalogue)
+  royalAlt: "#9F1211",
+  sky: "#F4A28C",       // light orange — labels on dark panels
+  skySoft: "#FCE9E4",   // orange tint — section bands, highlighted rows
+  stone: "#C2B19C",     // taupe (floor-plan template)
 } as const;
 
 export type BrandColor = keyof typeof colors;
