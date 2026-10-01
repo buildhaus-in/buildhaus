@@ -4,21 +4,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { colors } from "@buildhaus/brand";
 
-// Scroll-driven cinematic walkthrough of a modern villa — the pattern from the
+// Scroll-driven cinematic story of a modern villa — the pattern from the
 // reference reels: the page pins a full-screen stage and the visitor's scroll
-// scrubs a camera move (facade over the pool → pivot door → foyer → living &
-// dining → bedroom → infinity-pool terrace), with a caption per chapter.
+// scrubs one continuous film, with a caption per chapter:
+//   architect's drawing → structure rising → finishes & landscape → finished
+//   villa at dusk → pivot door → foyer → living & dining → bedroom →
+//   infinity-pool terrace.
 //
-// Footage: an AI-generated concept walkthrough the Owner created in PixVerse
-// (Downloads/PixVerse_V6_Image_Text_540P_Exterior_Slow_cine.mp4). It is a
-// CONCEPT VISUALISATION, not a completed Buildhaus project — the on-screen
+// Footage: two AI-generated concept clips the Owner created in PixVerse
+// (Downloads/PixVerse_V6_Transition_540P_Construction_timel.mp4 — a
+// drawing-to-built transition whose first frame was traced from the villa —
+// followed by PixVerse_V6_Image_Text_540P_Exterior_Slow_cine.mp4, whose
+// first frame matches the time-lapse's last, so the join is seamless). It is
+// a CONCEPT VISUALISATION, not a completed Buildhaus project — the on-screen
 // note says so and copy must never claim otherwise.
 //
-// The 5 s, 1024x576 (540p) clip's 121 frames were AI-upscaled 4x with
+// Both 5 s, 1024x576 (540p) clips (121 frames each) were AI-upscaled 4x with
 // Real-ESRGAN (realesrgan-x4plus) for clarity ("the video is not clarity"),
-// resized to 1920x1080, motion-interpolated to 48 fps (239 frames, for
-// smoother scrubbing) and cut into WebP frame sequences (public/walkthrough/
-// lg at 1920px, /sm at 1080px for phones), because scrubbing a normal video
+// joined, resized to 1920x1080, motion-interpolated to 48 fps (481 frames,
+// for smoother scrubbing) and cut into WebP frame sequences (public/
+// walkthrough/lg at 1920px, /sm at 1080px), because scrubbing a normal video
 // on scroll stutters: every frame here decodes on its own. When the Owner
 // re-exports from PixVerse at 1080p without the watermark, re-run the same
 // pipeline (upscale is then optional) to swap it in.
@@ -28,50 +33,74 @@ import { colors } from "@buildhaus/brand";
 //     and every chapter's text in an sr-only list (crawlers + screen readers
 //     get all of it; the animated captions are aria-hidden duplicates).
 //   * Frames only start downloading when the section is ~1 screen away:
-//     every 6th frame first (so the whole walkthrough works almost at once),
-//     then the gaps; the canvas draws the nearest frame already loaded.
+//     every 6th frame first (so the whole film works almost at once), then
+//     the gaps; the canvas draws the nearest frame already loaded. Phones
+//     (and Save-Data) load every other frame only — half the data, and still
+//     smooth at phone size.
 //   * Frames are drawn whole — never blended — so every frame stays sharp.
 //   * Portrait phones show the landscape footage as a large band fading into
-//     navy rather than cropping it to the screen's shape, which zoomed it
-//     into a blur.
+//     the dark panel colour rather than cropping it to the screen's shape,
+//     which zoomed it into a blur.
 //   * prefers-reduced-motion: no scrubbed camera motion — each chapter holds
 //     a single still frame.
 
-const FRAME_COUNT = 239;
+const FRAME_COUNT = 481;
+/** Scroll distance per chapter, in svh. */
+const CHAPTER_SVH = 70;
 
+// Frame indices on the 48 fps timeline: time-lapse source frame k ≈ 2k,
+// villa source frame k ≈ 242 + 2k.
 const CHAPTERS = [
   {
     start: 0,
-    label: "Arrival",
-    title: "A villa, designed around you.",
-    body: "A contemporary elevation in stone and teak, light that welcomes you home — designed for your family and your plot.",
+    label: "Design",
+    title: "Every home begins as a drawing.",
+    body: "Architecture and layouts developed for your family and your plot, with every cost visible in the BOQ before you sign.",
   },
   {
-    start: 48,
+    start: 44,
+    label: "Structure",
+    title: "Built exactly to the drawings.",
+    body: "Columns, beams and slabs cast to signed-off structural drawings, with quality checks documented at every stage.",
+  },
+  {
+    start: 88,
+    label: "Finish",
+    title: "Finishes without compromise.",
+    body: "Stone, teak, glazing and landscape — the materials you approved in the BOQ, installed exactly as specified.",
+  },
+  {
+    start: 152,
+    label: "Handover",
+    title: "Handed over as promised.",
+    body: "A final walkthrough comes first. The keys come only when the home matches what was agreed.",
+  },
+  {
+    start: 290,
     label: "Entrance",
     title: "Every detail, drawn before it's built.",
     body: "From the pivot door to the reveal lighting, every element is in the drawings — and in the BOQ — before you sign.",
   },
   {
-    start: 92,
+    start: 334,
     label: "Foyer",
-    title: "Finishes without compromise.",
-    body: "Stone, timber and lighting installed exactly as specified, checked and documented at every stage.",
+    title: "Warmth in every material.",
+    body: "Stone, timber and hidden lighting, checked and documented at every stage.",
   },
   {
-    start: 120,
+    start: 362,
     label: "Living",
     title: "Spaces that open to the garden.",
     body: "Layouts planned around how your family lives — light, ventilation and Vastu considered from day one.",
   },
   {
-    start: 160,
+    start: 402,
     label: "Bedroom",
     title: "Calm, by design.",
-    body: "Warm, quiet private spaces — built to the drawing and handed over only when they match what was agreed.",
+    body: "Warm, quiet private spaces — built to the drawing, finished to the detail.",
   },
   {
-    start: 210,
+    start: 452,
     label: "Welcome home",
     title: "Welcome home.",
     body: "Not just construction, but confidence.",
@@ -123,7 +152,8 @@ export function HouseWalkthrough() {
     const startLoading = () => {
       if (loadingStarted) return;
       loadingStarted = true;
-      const all = Array.from({ length: FRAME_COUNT }, (_, i) => i);
+      const stride = size === "sm" ? 2 : 1;
+      const all = Array.from({ length: FRAME_COUNT }, (_, i) => i).filter((i) => i % stride === 0);
       const order = [...all.filter((i) => i % 6 === 0), ...all.filter((i) => i % 6 !== 0)];
       let next = 0;
       const pump = () => {
@@ -192,11 +222,15 @@ export function HouseWalkthrough() {
     let lastChapter = -1;
     let lastProgress = -1;
     let raf = 0;
+    let lastT = performance.now();
     let visible = false;
     let drewOnce = false;
 
-    const tick = () => {
+    const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
+      // Time-based easing, so slow/throttled devices keep pace with the scroll.
+      const dt = Math.min(0.1, (now - lastT) / 1000);
+      lastT = now;
       if (!visible) return;
       let target = targetFrame();
       if (reduced) {
@@ -206,7 +240,7 @@ export function HouseWalkthrough() {
         current = target;
       } else {
         const diff = target - current;
-        current = Math.abs(diff) < 0.01 ? target : current + diff * 0.14;
+        current = Math.abs(diff) < 0.01 ? target : current + diff * (1 - Math.exp(-dt * 9));
       }
       const index = Math.round(current);
       if (index !== drawnIndex) needsDraw = true;
@@ -216,7 +250,8 @@ export function HouseWalkthrough() {
         const img = nearest(index);
         if (img) {
           draw(img);
-          drawnIndex = frames[index] ? index : -1;
+          // A late-loading exact frame re-triggers a draw via onload.
+          drawnIndex = index;
           if (!drewOnce) {
             drewOnce = true;
             setLive(true);
@@ -274,12 +309,12 @@ export function HouseWalkthrough() {
       ref={sectionRef}
       aria-labelledby="walkthrough-heading"
       className="relative bg-navy"
-      style={{ height: `${CHAPTERS.length * 85 + 60}svh` }}
+      style={{ height: `${CHAPTERS.length * CHAPTER_SVH + 60}svh` }}
     >
       {/* Full text for crawlers and screen readers; the visual captions
           below are decorative duplicates. */}
       <div className="sr-only">
-        <h2 id="walkthrough-heading">Walk through a modern villa</h2>
+        <h2 id="walkthrough-heading">From drawing to a finished villa</h2>
         <ol>
           {CHAPTERS.map((c) => (
             <li key={c.label}>
@@ -332,7 +367,7 @@ export function HouseWalkthrough() {
 
         {/* Chapter rail */}
         <nav aria-label="Walkthrough chapters" className="absolute right-4 top-1/2 hidden -translate-y-1/2 sm:block lg:right-8">
-          <ol className="relative space-y-4 border-r border-white/20 pr-4">
+          <ol className="relative space-y-4 rounded-l-xl2 border-r border-white/20 bg-black/35 py-3 pl-4 pr-4 backdrop-blur-sm">
             <span
               className="absolute -right-px top-0 w-0.5 bg-brand transition-[height] duration-150"
               style={{ height: `${progress * 100}%` }}
