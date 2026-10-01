@@ -14,12 +14,14 @@ import { colors } from "@buildhaus/brand";
 // CONCEPT VISUALISATION, not a completed Buildhaus project — the on-screen
 // note says so and copy must never claim otherwise.
 //
-// The 5 s, 1024x576 clip was motion-interpolated to 48 fps (239 frames, for
+// The 5 s, 1024x576 (540p) clip's 121 frames were AI-upscaled 4x with
+// Real-ESRGAN (realesrgan-x4plus) for clarity ("the video is not clarity"),
+// resized to 1920x1080, motion-interpolated to 48 fps (239 frames, for
 // smoother scrubbing) and cut into WebP frame sequences (public/walkthrough/
-// lg at native 1024px, /sm at 768px for phones; high quality, light
-// sharpening) because scrubbing a normal video on scroll stutters: every
-// frame here decodes on its own. Re-export from PixVerse at 1080p without
-// the watermark and re-run the same pipeline to swap it in.
+// lg at 1920px, /sm at 1080px for phones), because scrubbing a normal video
+// on scroll stutters: every frame here decodes on its own. When the Owner
+// re-exports from PixVerse at 1080p without the watermark, re-run the same
+// pipeline (upscale is then optional) to swap it in.
 //
 // Progressive enhancement / performance:
 //   * SSR renders the first frame as a plain <img> plus the first caption,
