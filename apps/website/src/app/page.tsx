@@ -139,26 +139,24 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Design/Build photos extracted from the Owner's own brand strategy
-          deck (Evakee Studios, "Buildhaus File export.pdf") — the Owner's
-          own commissioned photography, not stock. "Build" carries the
-          brand's alternate "Bh" logo lockup baked into the source image
-          (the Owner reviewed this and approved using it as-is). Deliver
-          stays an Unsplash stock photo (illustrative, not a specific
-          Buildhaus project); the "Featured projects" section below is the
-          one place that must only ever show real, Owner-published project
-          data. */}
+      {/* Design / Build / Deliver: Owner-supplied Mr Haus scenes (2026-10-02) —
+          drafting a plan, on an RCC-frame site, in front of a finished villa.
+          Illustrative artwork, not specific Buildhaus projects. Shown in full
+          colour (the mascot is the brand's colour character), square so he
+          isn't cropped at the right edge. The previous photos
+          (blueprints.jpg, construction-workers.jpg, interior-luxury.jpg)
+          stay in public/images/. */}
       <section className="mx-auto max-w-5xl px-5 py-14">
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { src: "/images/blueprints.jpg", label: "Design", alt: "An architect reviewing rolled architectural drawings at a desk", hue: hueFor(0) },
-            { src: "/images/construction-workers.jpg", label: "Build", alt: "A construction worker carrying a wooden beam on an RCC framework site, under a tower crane", hue: hueFor(1) },
-            { src: "/images/interior-luxury.jpg", label: "Deliver", alt: "A finished, high-end living room interior", hue: hueFor(4) },
+            { src: "/images/design-mr-haus.webp", label: "Design", alt: "Mr Haus, the Buildhaus mascot, sketching a floor plan at a drafting table beside a model of a modern villa", hue: hueFor(0) },
+            { src: "/images/build-mr-haus.webp", label: "Build", alt: "Mr Haus with a clipboard in front of a two-storey RCC frame with brick infill under construction", hue: hueFor(1) },
+            { src: "/images/deliver-mr-haus.webp", label: "Deliver", alt: "Mr Haus in front of a finished modern villa with stone cladding, timber details and glass balconies", hue: hueFor(4) },
           ].map((img, i) => (
             <Reveal key={img.label} delay={i * 90}>
               <Tilt className="h-full overflow-hidden rounded-xl2 border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element -- decorative stock photos, no optimisation pipeline needed for three static images */}
-                <img src={img.src} alt={img.alt} className="aspect-[4/3] w-full object-cover grayscale transition duration-700 hover:grayscale-0" />
+                <img src={img.src} alt={img.alt} className="aspect-square w-full object-cover" loading="lazy" />
                 <div className={`flex items-center gap-2 border-t-2 ${img.hue.borderT} bg-card px-4 py-2.5`}>
                   <span className={`h-2 w-2 rounded-full ${img.hue.dot}`} aria-hidden />
                   <span className={`text-xs font-bold uppercase tracking-widest ${img.hue.text}`}>{img.label}</span>
