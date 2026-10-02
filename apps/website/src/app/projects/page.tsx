@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { sqft } from "@buildhaus/utils";
 import { EmptyState } from "@buildhaus/ui";
 import { Card } from "@buildhaus/ui";
-import { hueForProjectType } from "@/lib/palette";
+import { hueForProjectType, projectTypeLabel } from "@/lib/palette";
 
 export default async function ProjectsPage() {
   const supabase = createClient();
   const { data: projects } = await supabase
     .from("public_projects")
-    .select("id,slug,name,city,project_type,builtup_area_sqft,completion_year,package,duration_months")
+    .select("id,slug,city,project_type,builtup_area_sqft,completion_year,package,duration_months")
     .eq("is_public", true)
     .order("is_featured", { ascending: false })
     .order("completion_year", { ascending: false });
@@ -19,17 +20,13 @@ export default async function ProjectsPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">Our portfolio</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          Proof, not promises.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          Completed and in-progress work across Hyderabad &amp; Nellore. Every project is tracked
+      <PageHero
+        eyebrow="Our portfolio"
+        title="Proof, not promises."
+        lead={<>Completed and in-progress work across Hyderabad &amp; Nellore. Every project is tracked
           stage by stage with documented quality checks — some clients choose to make that record
-          public, so you can judge our standard for yourself.
-        </p>
-      </section>
+          public, so you can judge our standard for yourself.</>}
+      />
 
       <section className="mx-auto max-w-5xl px-5 pb-16">
         {(!projects || projects.length === 0) ? (
@@ -41,8 +38,9 @@ export default async function ProjectsPage() {
               return (
               <Link key={p.id} href={`/projects/${p.slug}`}>
                 <Card className={`h-full border-t-4 ${hue.borderT} transition hover:brightness-[0.98]`}>
-                  <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.project_type}{p.package && <> · {p.package}</>}</div>
-                  <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
+                  <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.package ? `${p.package} package` : "Buildhaus project"}</div>
+                  {/* Build type, never the client-identifying project name. */}
+                  <div className="mt-1 text-lg font-bold text-ivory">{projectTypeLabel(p.project_type)}</div>
                   <div className="text-sm text-muted">{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                     <span>{sqft(p.builtup_area_sqft)}</span>

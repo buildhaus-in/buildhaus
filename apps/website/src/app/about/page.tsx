@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card, StatCard } from "@buildhaus/ui";
 import { hueFor } from "@/lib/palette";
 import { BrandMark } from "@/components/public/brand-mark";
@@ -33,17 +34,13 @@ export default async function AboutPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">About Buildhaus</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          The only construction brand built on one belief: the home you envision is the home you receive.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          We exist to ensure that the home you imagined is always the home you receive — no less
+      <PageHero
+        eyebrow="About Buildhaus"
+        title="The only construction brand built on one belief: the home you envision is the home you receive."
+        lead={<>We exist to ensure that the home you imagined is always the home you receive — no less
           in design, no less in transparency, no less in quality. Building across Andhra Pradesh &amp;
-          Telangana — Hyderabad and Nellore today, expanding across premium residential markets.
-        </p>
-      </section>
+          Telangana — Hyderabad and Nellore today, expanding across premium residential markets.</>}
+      />
 
       {/* Straight from the brand strategy deck (Evakee Studios, "Buildhaus
           File export.pdf") — the tagline and supporting line the identity
@@ -120,7 +117,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto flex max-w-5xl flex-wrap gap-4 px-5 py-10">
           {/* Owner-published figures: brochure p2/p6, company profile p2/p8–9. */}
           <StatCard label="Projects handled" value="60+" sub="Construction & interiors" tone="brand" />

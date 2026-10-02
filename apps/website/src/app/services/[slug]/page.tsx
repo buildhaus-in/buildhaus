@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card } from "@buildhaus/ui";
 import { inr, sqft } from "@buildhaus/utils";
 import { WEBSITE_URL } from "@/lib/env";
 import { SERVICES, getService } from "../data";
-import { CATEGORY_HUE } from "@/lib/palette";
+import { CATEGORY_HUE, projectTypeLabel } from "@/lib/palette";
 
 export function generateStaticParams() {
   return SERVICES.map((s) => ({ slug: s.slug }));
@@ -51,7 +52,7 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
   if (service.projectType) {
     const { data } = await supabase
       .from("public_projects")
-      .select("id,slug,name,city,builtup_area_sqft,completion_year")
+      .select("id,slug,project_type,city,builtup_area_sqft,completion_year")
       .eq("is_public", true)
       .eq("project_type", service.projectType)
       .limit(3);
@@ -105,30 +106,26 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }} />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <nav className="text-xs text-muted">
-          <Link href="/" className="hover:text-sand">Home</Link>
-          <span className="mx-1.5">/</span>
-          <Link href="/services" className="hover:text-sand">Services</Link>
-          <span className="mx-1.5">/</span>
-          <span className="text-sand">{service.title}</span>
-        </nav>
-        <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest ${hue.text}`}>
-          <span className={`h-2 w-2 rounded-full ${hue.dot}`} aria-hidden />
-          Service
-        </div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          {service.title}
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">{service.body}</p>
+      <PageHero
+        eyebrow="Service"
+        title={service.title}
+        lead={service.body}
+        above={<nav>
+            <Link href="/" className="hover:text-white">Home</Link>
+            <span className="mx-1.5">/</span>
+            <Link href="/services" className="hover:text-white">Services</Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-white/85">{service.title}</span>
+          </nav>}
+      >
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href={`/cost-estimator`} className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Get an instant estimate</Link>
-          <Link href="/enquiry" className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">Send an enquiry</Link>
-          <Link href="/contact" className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">Contact us</Link>
+          <Link href={`/cost-estimator`} className="rounded-lg bg-brand px-5 py-3 font-semibold text-white transition hover:bg-brand-deep">Get an instant estimate</Link>
+          <Link href="/enquiry" className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">Send an enquiry</Link>
+          <Link href="/contact" className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">Contact us</Link>
         </div>
-      </section>
+      </PageHero>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto grid max-w-5xl gap-4 px-5 py-8 sm:grid-cols-3">
           <div>
             <div className="text-[11px] font-bold uppercase tracking-wide text-sandlight">Suitable for</div>
@@ -167,7 +164,7 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
         </div>
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="mb-6 text-xl font-bold text-ivory">Design & construction process</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -227,7 +224,7 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
         </div>
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="mb-6 text-xl font-bold text-ivory">Related projects</h2>
           {relatedProjects.length === 0 ? (
@@ -240,8 +237,8 @@ export default async function ServiceDetailPage({ params }: { params: { slug: st
               {relatedProjects.map((p: any) => (
                 <Link key={p.id} href={`/projects/${p.slug}`}>
                   <Card className={`h-full border-l-4 ${hue.borderL} transition-colors hover:brightness-[0.98]`}>
-                    <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.city} · {p.completion_year}</div>
-                    <div className="mt-1 text-lg font-bold text-ivory">{p.name}</div>
+                    <div className={`text-xs font-bold uppercase tracking-wide ${hue.text}`}>{p.city}{p.completion_year && <> · {p.completion_year}</>}</div>
+                    <div className="mt-1 text-lg font-bold text-ivory">{projectTypeLabel(p.project_type)}</div>
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-sand">
                       <span>{sqft(p.builtup_area_sqft)}</span>
                     </div>

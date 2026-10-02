@@ -6,18 +6,20 @@ import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, StatCard, Badge } from "@buildhaus/ui";
 import { sqft } from "@buildhaus/utils";
 import { WEBSITE_URL } from "@/lib/env";
-import { hueForProjectType } from "@/lib/palette";
+import { hueForProjectType, projectTypeLabel } from "@/lib/palette";
+import { PageHero } from "@/components/public/page-hero";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const supabase = createClient();
   const { data: project } = await supabase
     .from("public_projects")
-    .select("name,description,project_type,city,completion_year")
+    .select("description,project_type,city,completion_year")
     .eq("slug", params.slug)
     .eq("is_public", true)
     .maybeSingle();
   if (!project) return {};
-  const title = project.name;
+  // Never the project's name — that's the client's family name.
+  const title = `${projectTypeLabel(project.project_type)} in ${project.city}`;
   const description =
     project.description ||
     `A ${project.project_type} project in ${project.city}${project.completion_year ? `, completed ${project.completion_year}` : ""}.`;
@@ -42,6 +44,10 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
 
   if (!project) notFound();
   const hue = hueForProjectType(project.project_type);
+  // Public label: build type + city. The `name` column holds the client's
+  // family name ("… Residence") and must not be shown anywhere public.
+  const typeLabel = projectTypeLabel(project.project_type);
+  const displayName = `${typeLabel} in ${project.city}`;
 
   const { data: gallery } = await supabase
     .from("project_gallery")
@@ -55,14 +61,14 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: WEBSITE_URL },
       { "@type": "ListItem", position: 2, name: "Projects", item: `${WEBSITE_URL}/projects` },
-      { "@type": "ListItem", position: 3, name: project.name, item: `${WEBSITE_URL}/projects/${project.slug}` },
+      { "@type": "ListItem", position: 3, name: displayName, item: `${WEBSITE_URL}/projects/${project.slug}` },
     ],
   };
 
   const projectJsonLd = {
     "@context": "https://schema.org",
     "@type": "House",
-    name: project.name,
+    name: displayName,
     description: project.description,
     // Region follows the project's city: Hyderabad sits in Telangana, the
     // rest of the current portfolio in Andhra Pradesh.
@@ -82,24 +88,19 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(projectJsonLd) }} />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <Link href="/projects" className="text-xs font-semibold text-brand hover:underline">← All projects</Link>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${hue.border} ${hue.bg} ${hue.text}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${hue.dot}`} aria-hidden />
-            {project.project_type}
-          </span>
-          {project.package && <Badge tone="muted">{project.package} package</Badge>}
-          <Badge tone="muted">{project.city}{project.completion_year && <> · {project.completion_year}</>}</Badge>
+      <PageHero
+        eyebrow={<>{typeLabel}{project.package && <> · {project.package} package</>}</>}
+        title={displayName}
+        lead={project.description}
+        above={<Link href="/projects" className="font-semibold text-brand hover:underline">← All projects</Link>}
+      >
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-semibold text-white/70">
+          {project.location && <span className="rounded-full border border-white/20 px-2.5 py-1">{project.location}</span>}
+          <span className="rounded-full border border-white/20 px-2.5 py-1">{project.city}{project.completion_year && <> · {project.completion_year}</>}</span>
         </div>
-        <h1 className="mt-3 max-w-2xl text-3xl font-black leading-tight text-ivory sm:text-4xl">
-          {project.name}
-        </h1>
-        {project.location && <p className="mt-2 text-sm text-muted">{project.location}</p>}
-        <p className="mt-4 max-w-2xl text-sand">{project.description}</p>
-      </section>
+      </PageHero>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto flex max-w-5xl flex-wrap gap-4 px-5 py-8">
           <StatCard label="Built-up area" value={sqft(project.builtup_area_sqft)} tone="sand" />
           {project.plot_area_sqft && <StatCard label="Plot area" value={sqft(project.plot_area_sqft)} tone="sand" />}
@@ -130,7 +131,7 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
       </section>
 
       {project.testimonial && (
-        <section className="border-y border-border bg-surface/40">
+        <section className="border-y border-border bg-sky-soft">
           <div className="mx-auto max-w-3xl px-5 py-14 text-center">
             <div className="text-3xl text-brand">&ldquo;</div>
             <p className="text-lg text-sandlight">{project.testimonial}</p>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card, Badge } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { TIER_HUE } from "@/lib/palette";
@@ -53,21 +54,19 @@ export default async function PackagesPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-6xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">Construction packages</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          {tierWord} levels of experience. One transparent starting rate per sqft.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          Our packages are levels of experience, not just cost — every tier gets the same structural
+      <PageHero
+        width="6xl"
+        eyebrow="Construction packages"
+        title={<>{tierWord} levels of experience. One transparent starting rate per sqft.</>}
+        lead={<>Our packages are levels of experience, not just cost — every tier gets the same structural
           quality, an open itemised BOQ before agreement and a single point of contact throughout.
-          Rates below feed directly into the Cost Estimator.
-        </p>
-        <p className="mt-3 max-w-xl text-xs text-muted">
+          Rates below feed directly into the Cost Estimator.</>}
+      >
+        <p className="mt-3 max-w-xl text-xs text-white/55">
           Rates are a starting reference, never a final price — the final cost depends on plot size,
           floor count, design complexity and site conditions.
         </p>
-      </section>
+      </PageHero>
 
       <section className="mx-auto max-w-6xl px-5 pb-16">
         {(!packages || packages.length === 0) ? (
@@ -133,7 +132,7 @@ export default async function PackagesPage() {
         )}
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-6xl px-5 py-14">
           <h2 className="text-xl font-bold text-ivory">Which package is right for you?</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

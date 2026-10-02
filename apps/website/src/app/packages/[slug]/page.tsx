@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card, Badge } from "@buildhaus/ui";
 import { WEBSITE_URL } from "@/lib/env";
 import { TIER_HUE } from "@/lib/palette";
@@ -79,55 +80,48 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <nav className="text-xs text-muted">
-          <Link href="/" className="hover:text-sand">Home</Link>
-          <span className="mx-1.5">/</span>
-          <Link href="/packages" className="hover:text-sand">Packages</Link>
-          <span className="mx-1.5">/</span>
-          <span className="text-sand">{pkg.label}</span>
-        </nav>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest ${hue.text}`}>
-            <span className={`h-2 w-2 rounded-full ${hue.dot}`} aria-hidden />
-            {pkg.series ? `Construction package · ${pkg.series}` : "Construction package"}
-          </div>
-          {isRecommended && <Badge tone="brand">Recommended</Badge>}
+      <PageHero
+        eyebrow={<span className="inline-flex flex-wrap items-center gap-2">{pkg.series ? `Construction package · ${pkg.series}` : "Construction package"}{isRecommended && <Badge tone="brand">Recommended</Badge>}</span>}
+        title={<>{pkg.label} package</>}
+        lead={pkg.description}
+        above={<nav>
+            <Link href="/" className="hover:text-white">Home</Link>
+            <span className="mx-1.5">/</span>
+            <Link href="/packages" className="hover:text-white">Packages</Link>
+            <span className="mx-1.5">/</span>
+            <span className="text-white/85">{pkg.label}</span>
+          </nav>}
+      >
+        <div className="mt-5 font-display text-4xl font-black text-brand">
+          ₹{Number(pkg.rate_per_sqft).toLocaleString("en-IN")}<span className="text-base font-medium text-white/60">/sqft</span>
         </div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          {pkg.label} package
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">{pkg.description}</p>
-        <div className={`mt-4 text-3xl font-extrabold ${hue.textStrong}`}>
-          ₹{Number(pkg.rate_per_sqft).toLocaleString("en-IN")}<span className="text-base font-medium text-muted">/sqft</span>
-        </div>
-        <p className="mt-2 max-w-xl text-xs text-muted">
+        <p className="mt-2 max-w-xl text-xs text-white/55">
           A starting reference, never a final price — the final cost depends on plot size, floor
           count, design complexity and site conditions.
         </p>
         {(pkg.best_for ?? []).length > 0 && (
           <div className="mt-5 flex flex-wrap gap-2">
             {(pkg.best_for ?? []).map((b: string) => (
-              <span key={b} className={`rounded-full border ${hue.border} ${hue.bg} px-3 py-1 text-xs font-medium ${hue.text}`}>{b}</span>
+              <span key={b} className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium text-cream">{b}</span>
             ))}
           </div>
         )}
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href={`/cost-estimator?package=${pkg.key}`} className="rounded-lg bg-brand px-5 py-3 font-semibold text-black">
+          <Link href={`/cost-estimator?package=${pkg.key}`} className="rounded-lg bg-brand px-5 py-3 font-semibold text-white transition hover:bg-brand-deep">
             Get an instant estimate
           </Link>
-          <Link href={`/cost-estimator?package=${pkg.key}`} className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">
+          <Link href={`/cost-estimator?package=${pkg.key}`} className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">
             Generate a quotation
           </Link>
-          <Link href="/packages" className="rounded-lg border border-border px-5 py-3 font-semibold text-sand hover:bg-card">
+          <Link href="/packages" className="rounded-lg border border-white/30 px-5 py-3 font-semibold text-white hover:bg-white/10">
             Compare all packages
           </Link>
         </div>
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-3 text-xs text-white/55">
           &ldquo;Generate a quotation&rdquo; takes you to the Cost Estimator, pre-selected on the {pkg.label} package —
           fill in your plot details there to get a shareable quotation reference.
         </p>
-      </section>
+      </PageHero>
 
       {(pkg.highlights ?? []).length > 0 && (
         <section className="mx-auto max-w-5xl px-5 pb-10">
@@ -197,7 +191,7 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
         </div>
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="mb-6 text-xl font-bold text-ivory">Compare with other packages</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

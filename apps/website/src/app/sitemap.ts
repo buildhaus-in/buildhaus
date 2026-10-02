@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient();
   const { data: projects } = await supabase
     .from("public_projects")
-    .select("slug,name")
+    .select("slug")
     .eq("is_public", true);
 
   const { data: packages } = await supabase

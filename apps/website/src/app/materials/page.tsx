@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { hueFor } from "@/lib/palette";
@@ -23,17 +24,13 @@ export default async function MaterialsPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">Material specifications</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          Exactly what goes into your build.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          We standardise on ISI-certified, branded materials across every project, and we publish
+      <PageHero
+        eyebrow="Material specifications"
+        title="Exactly what goes into your build."
+        lead={<>We standardise on ISI-certified, branded materials across every project, and we publish
           the specifications — because quality you can&apos;t verify is just a claim. The exact brand
-          and grade within each category depends on your chosen package (Basic, Standard, Premium or Luxury).
-        </p>
-      </section>
+          and grade within each category depends on your chosen package (Basic, Standard, Premium or Luxury).</>}
+      />
 
       <section className="mx-auto max-w-5xl px-5 pb-16">
         {grouped.size === 0 ? (
@@ -63,7 +60,7 @@ export default async function MaterialsPage() {
         )}
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="text-xl font-bold text-ivory">Checked, documented, then built</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted">

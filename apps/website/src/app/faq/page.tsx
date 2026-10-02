@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card, EmptyState } from "@buildhaus/ui";
 import { hueFor } from "@/lib/palette";
 
@@ -44,16 +45,13 @@ export default async function FaqPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       )}
 
-      <section className="mx-auto max-w-3xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">FAQ</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          Ask us anything. Nothing hidden.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          Clear answers to the questions we hear most about cost, timeline, our process and material
-          quality. Can&apos;t find what you need? <Link href="/contact" className="text-brand hover:underline">Contact us</Link> directly.
-        </p>
-      </section>
+      <PageHero
+        width="3xl"
+        eyebrow="FAQ"
+        title="Ask us anything. Nothing hidden."
+        lead={<>Clear answers to the questions we hear most about cost, timeline, our process and material
+          quality. Can&apos;t find what you need? <Link href="/contact" className="font-semibold text-brand hover:underline">Contact us</Link> directly.</>}
+      />
 
       <section className="mx-auto max-w-3xl px-5 pb-20">
         {grouped.size === 0 ? (

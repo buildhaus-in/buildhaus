@@ -15,7 +15,7 @@ export default async function Home() {
   const supabase = createClient();
   const { data: projects } = await supabase
     .from("public_projects")
-    .select("id,name,city,project_type,builtup_area_sqft,completion_year,package")
+    .select("id,city,project_type,builtup_area_sqft,completion_year,package")
     .eq("is_public", true)
     .order("is_featured", { ascending: false })
     .limit(6);
@@ -266,7 +266,7 @@ export default async function Home() {
       </section>
 
       {testimonials && testimonials.length > 0 && (
-        <section className="border-y border-border bg-surface/40">
+        <section className="border-y border-border bg-sky-soft">
           <div className="mx-auto max-w-5xl px-5 py-14">
             <h2 className="mb-6 text-xl font-bold text-ivory">What our clients say</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

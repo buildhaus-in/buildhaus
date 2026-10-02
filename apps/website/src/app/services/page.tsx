@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card } from "@buildhaus/ui";
 import { SERVICES } from "./data";
 import { CATEGORY_HUE, hueFor } from "@/lib/palette";
@@ -24,16 +25,12 @@ export default function ServicesPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">What we build</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          Built for those who expect better.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          Whichever building you&apos;re planning, Buildhaus carries it from blueprint to handover —
-          design, procurement, site execution and quality under one accountable team.
-        </p>
-      </section>
+      <PageHero
+        eyebrow="What we build"
+        title="Built for those who expect better."
+        lead={<>Whichever building you&apos;re planning, Buildhaus carries it from blueprint to handover —
+          design, procurement, site execution and quality under one accountable team.</>}
+      />
 
       <section className="mx-auto max-w-5xl px-5 pb-14">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -55,7 +52,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <h2 className="mb-6 text-xl font-bold text-ivory">How an engagement runs</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

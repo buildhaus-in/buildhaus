@@ -68,14 +68,18 @@ export function hueForProjectType(_projectType: string | null | undefined): Hue 
   return BRAND_HUE;
 }
 
-// Display label for a project's build type — used on the public homepage
-// teaser instead of the client-identifying project name (e.g. a family
-// surname). "duplex" reads as "G+2" (Ground+2 floors) per an explicit
-// request — that's the real, more informative construction term already
-// used in services/data.ts's sizing copy — everything else is just
-// title-cased.
+// Display label for a project's build type — shown EVERYWHERE public in
+// place of the project's name, which is the client's family name (e.g.
+// "Reddy Residence"): homepage teaser, /projects cards, /projects/[slug]
+// heading, page title and JSON-LD. Per "remove their names and just mention
+// the independent house and apartment" (2026-10-02), which supersedes the
+// earlier "G+2" label for duplexes. Anything not listed is title-cased.
 const PROJECT_TYPE_LABEL: Record<string, string> = {
-  duplex: "G+2",
+  duplex: "Independent House",
+  independent_house: "Independent House",
+  "independent house": "Independent House",
+  villa: "Independent House",
+  apartment: "Apartment",
 };
 
 export function projectTypeLabel(projectType: string | null | undefined): string {

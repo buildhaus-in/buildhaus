@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card } from "@buildhaus/ui";
 import { hueFor } from "@/lib/palette";
 
@@ -8,17 +9,13 @@ export default function ContactPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">Contact us</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          Start with one conversation.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          Whether you have a plot ready in Hyderabad or Nellore, or are still comparing options,
+      <PageHero
+        eyebrow="Contact us"
+        title="Start with one conversation."
+        lead={<>Whether you have a plot ready in Hyderabad or Nellore, or are still comparing options,
           our team will walk you through packages, timelines and next steps — clearly, and without
-          the hard sell.
-        </p>
-      </section>
+          the hard sell.</>}
+      />
 
       <section className="mx-auto max-w-5xl px-5 pb-16">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -45,7 +42,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="border-y border-border bg-surface/40">
+      <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-14">
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
+import { PageHero } from "@/components/public/page-hero";
 import { Card } from "@buildhaus/ui";
 import { hueFor } from "@/lib/palette";
 
@@ -58,16 +59,12 @@ export default function ProcessPage() {
     <main className="min-h-screen bg-bg text-ink">
       <PublicHeader />
 
-      <section className="mx-auto max-w-5xl px-5 py-16">
-        <div className="text-xs font-bold uppercase tracking-widest text-brand">How we work</div>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-ivory sm:text-5xl">
-          A process that never leaves you guessing.
-        </h1>
-        <p className="mt-4 max-w-xl text-sand">
-          From your first conversation with us to the day you receive your keys, every step is
-          structured, documented and visible. One partner. Full accountability. Zero chaos.
-        </p>
-      </section>
+      <PageHero
+        eyebrow="How we work"
+        title="A process that never leaves you guessing."
+        lead={<>From your first conversation with us to the day you receive your keys, every step is
+          structured, documented and visible. One partner. Full accountability. Zero chaos.</>}
+      />
 
       <section className="mx-auto max-w-5xl px-5 pb-14">
         <div className="grid gap-8 lg:grid-cols-2">
