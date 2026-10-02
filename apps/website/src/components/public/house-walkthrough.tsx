@@ -366,7 +366,7 @@ export function HouseWalkthrough() {
         </div>
 
         {/* Chapter rail */}
-        <nav aria-label="Walkthrough chapters" className="absolute right-4 top-1/2 hidden -translate-y-1/2 sm:block lg:right-8">
+        <nav aria-label="Walkthrough chapters" className="absolute right-8 top-1/2 hidden -translate-y-1/2 lg:block">
           <ol className="relative space-y-4 rounded-l-xl2 border-r border-white/20 bg-black/35 py-3 pl-4 pr-4 backdrop-blur-sm">
             <span
               className="absolute -right-px top-0 w-0.5 bg-brand transition-[height] duration-150"
@@ -390,8 +390,8 @@ export function HouseWalkthrough() {
           </ol>
         </nav>
 
-        {/* Mobile progress bar */}
-        <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10 sm:hidden" aria-hidden>
+        {/* Progress bar below lg, where the chapter rail would collide with the captions */}
+        <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10 lg:hidden" aria-hidden>
           <div className="h-full bg-brand" style={{ width: `${progress * 100}%` }} />
         </div>
 
