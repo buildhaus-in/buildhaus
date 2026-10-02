@@ -59,7 +59,8 @@ const LOCAL_BUSINESS_JSONLD = {
   description:
     "Design-led construction with transparent BOQ pricing, structured milestone updates and documented stage-wise quality checks — from blueprint to handover.",
   url: WEBSITE_URL,
-  telephone: "+917328573826",
+  telephone: "+917382573826",
+  email: "samanth@buildhaus.in",
   address: {
     "@type": "PostalAddress",
     addressLocality: "Nellore",

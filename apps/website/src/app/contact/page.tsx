@@ -31,13 +31,15 @@ export default function ContactPage() {
           <Card className={`border-t-2 ${hueFor(1).borderT}`}>
             <div className="text-[11px] font-bold uppercase tracking-wide text-sandlight">Phone & WhatsApp</div>
             <div className="mt-2 text-sm text-ivory">
-              <a href="tel:+917328573826" className="hover:text-brand">+91 73285 73826</a>
+              <a href="tel:+917382573826" className="hover:text-brand">+91 73825 73826</a>
             </div>
             <div className="mt-1 text-xs text-muted">Mon–Sat, 9:30 AM – 6:30 PM IST</div>
           </Card>
           <Card className={`border-t-2 ${hueFor(4).borderT}`}>
             <div className="text-[11px] font-bold uppercase tracking-wide text-sandlight">Email</div>
-            <div className="mt-2 text-sm text-ivory">hello@buildhaus.example</div>
+            <div className="mt-2 text-sm text-ivory">
+              <a href="mailto:samanth@buildhaus.in" className="hover:text-brand">samanth@buildhaus.in</a>
+            </div>
             <div className="mt-1 text-xs text-muted">We usually reply within one business day.</div>
           </Card>
         </div>
