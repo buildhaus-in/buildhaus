@@ -5,6 +5,7 @@ import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { MrHaus } from "@/components/public/mr-haus";
 import { Tilt, Reveal } from "@/components/public/motion";
 import { HouseWalkthrough } from "@/components/public/house-walkthrough";
+import { SiteStory } from "@/components/public/site-story";
 import { SERVICES } from "./services/data";
 import { hueForProjectType, hueFor, projectTypeLabel } from "@/lib/palette";
 
@@ -80,6 +81,9 @@ export default async function Home() {
           <MrHaus className="mt-4 h-40 self-end sm:h-48 lg:mt-0 lg:h-80 xl:h-96" />
         </div>
       </section>
+
+      {/* A real Buildhaus project (Nellore): plan -> site today -> design. */}
+      <SiteStory />
 
       <section className="border-y border-border bg-sky-soft">
         <div className="mx-auto max-w-5xl px-5 py-8">
