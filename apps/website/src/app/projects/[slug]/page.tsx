@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, StatCard, Badge } from "@buildhaus/ui";
@@ -42,7 +42,24 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
     .eq("is_public", true)
     .maybeSingle();
 
-  if (!project) notFound();
+  if (!project) {
+    // Project slugs end in the first 8 hex chars of the project id
+    // (migration 0024). If a slug was renamed — e.g. the 2026-10-02 change
+    // that took client surnames out of URLs — an old link still carries that
+    // suffix, so find the project by it and permanently redirect.
+    const suffix = params.slug.match(/-([0-9a-f]{8})$/)?.[1];
+    if (suffix) {
+      const { data: moved } = await supabase
+        .from("public_projects")
+        .select("slug")
+        .eq("is_public", true)
+        .ilike("slug", `%-${suffix}`)
+        .limit(1)
+        .maybeSingle();
+      if (moved?.slug && moved.slug !== params.slug) permanentRedirect(`/projects/${moved.slug}`);
+    }
+    notFound();
+  }
   const hue = hueForProjectType(project.project_type);
   // Public label: build type + city. The `name` column holds the client's
   // family name ("… Residence") and must not be shown anywhere public.
