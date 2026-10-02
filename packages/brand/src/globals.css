@@ -17,11 +17,14 @@
   --danger: #b3261e;
   --muted: #66666c;
   --ink: #2e2b2b;
-  --navy: #1f1816;
+  --navy: #1f1916;
   --royal: #9f1211;
   --sky: #f4a28c;
-  --sky-soft: #fce9e4;
-  --stone: #c2b19c;
+  --sky-soft: #f6ead8;
+  --stone: #c7b8a5;
+  --brand-deep: #d13611;
+  --cream: #edcfa4;
+  --mist: #dfe4e3;
   --font-sans: "Inter", -apple-system, system-ui, sans-serif;
   --font-display: "Poppins", var(--font-sans);
 }

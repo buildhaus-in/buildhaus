@@ -1,15 +1,10 @@
 import Link from "next/link";
-import { createClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, StatCard } from "@buildhaus/ui";
 import { hueFor } from "@/lib/palette";
+import { BrandMark } from "@/components/public/brand-mark";
 
 export default async function AboutPage() {
-  const supabase = createClient();
-  const { data: completed } = await supabase
-    .from("public_projects")
-    .select("id", { count: "exact", head: true })
-    .eq("is_public", true);
 
   const values = [
     {
@@ -68,7 +63,16 @@ export default async function AboutPage() {
       </section>
 
       <section className="border-y border-border bg-sky-soft">
-        <div className="mx-auto max-w-3xl px-5 py-14">
+        <div className="mx-auto grid max-w-5xl gap-10 px-5 py-14 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+          {/* Black-and-white site photo from the brand company profile, per
+              the collateral's "use black and white imagery" rule. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- single decorative brand photo */}
+          <img
+            src="/images/brand/rebar-crew-bw.jpg"
+            alt="Workers tying reinforcement steel against the sky on a construction site"
+            className="hidden aspect-[3/4] w-full rounded-xl2 object-cover lg:block"
+          />
+          <div>
           <div className="text-[11px] font-bold uppercase tracking-widest text-sandlight">Why Buildhaus exists</div>
           <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-sandlight">
             <p>
@@ -94,15 +98,16 @@ export default async function AboutPage() {
               were promised, and never feels let down, at any stage of the build.
             </p>
           </div>
+          </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-5 py-14">
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { title: "Purpose", body: "The home you imagined should always be the home you receive. No less in design, no less in transparency and no less in quality." },
+            { title: "Vision", body: "To become the most trusted name in design-led construction, where every home delivered stands as proof that precision, transparency and great design can exist without compromise." },
+            { title: "Mission", body: "Design-led, precision-built homes for ambitious plot owners — structured with complete transparency, crafted without compromise and handed over exactly as promised." },
             { title: "How we work", body: "Most construction companies will tell you what they build. We will show you how — and let you decide if that is the standard you are looking for." },
-            { title: "What we hold to", body: "Trust. Precision. Delivered as promised. Every message we send and every milestone we report connects back to that thought." },
           ].map((c, i) => {
             const hue = hueFor(i);
             return (
@@ -117,10 +122,40 @@ export default async function AboutPage() {
 
       <section className="border-y border-border bg-surface/40">
         <div className="mx-auto flex max-w-5xl flex-wrap gap-4 px-5 py-10">
-          <StatCard label="Public portfolio projects" value={completed?.count ?? completed?.length ?? "—"} tone="brand" />
+          {/* Owner-published figures: brochure p2/p6, company profile p2/p8–9. */}
+          <StatCard label="Projects handled" value="60+" sub="Construction & interiors" tone="brand" />
+          <StatCard label="Projects completed" value="54+" tone="sand" />
+          <StatCard label="Client satisfaction" value="95%+" tone="sand" />
           <StatCard label="Construction stages tracked" value="25" tone="sand" />
           <StatCard label="Package tiers" value="4" sub="Basic · Standard · Premium · Luxury" tone="sand" />
           <StatCard label="Where we build" value="Hyderabad & Nellore" tone="sand" />
+        </div>
+      </section>
+
+      {/* Brand personality — the six traits from the brand strategy
+          document (p41), on the warm-black panel used across the collateral. */}
+      <section className="relative overflow-hidden bg-navy">
+        <BrandMark className="pointer-events-none absolute -right-20 -top-16 w-96 text-brand/15" />
+        <div className="relative mx-auto max-w-5xl px-5 py-16">
+          <div className="text-xs font-bold uppercase tracking-[0.25em] text-brand">Who we are</div>
+          <h2 className="mt-3 max-w-xl text-3xl font-black leading-tight text-white sm:text-4xl">
+            Warm enough to trust. Precise enough to believe.
+          </h2>
+          <div className="mt-10 grid gap-px overflow-hidden rounded-xl2 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { t: "Precise", b: "Considered and exact. Every decision is intentional; nothing is left to chance." },
+              { t: "Assured", b: "Confident without being loud. Lets the work speak for itself." },
+              { t: "Design-led", b: "Thinks architecturally first. Sees beauty and function as inseparable." },
+              { t: "Accountable", b: "Owns every outcome. Never deflects, never disappears." },
+              { t: "Transparent", b: "Open and honest at every stage. No surprises, no fine print." },
+              { t: "Grounded", b: "Rooted in the places we build. Understands its people and speaks their language." },
+            ].map((x) => (
+              <div key={x.t} className="bg-navy p-6">
+                <div className="font-display text-lg font-bold text-cream">{x.t}</div>
+                <p className="mt-2 text-sm text-white/70">{x.b}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -149,7 +184,7 @@ export default async function AboutPage() {
             <div className="text-lg font-bold text-ivory">Want to know what your build would cost?</div>
             <p className="mt-1 text-sm text-muted">An indicative cost, timeline and payment schedule in a couple of minutes. Nothing hidden.</p>
           </div>
-          <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white">Try the Cost Estimator</Link>
+          <Link href="/cost-estimator" className="rounded-lg bg-brand px-5 py-3 font-semibold text-white transition hover:bg-brand-deep">Try the Cost Estimator</Link>
         </Card>
       </section>
 

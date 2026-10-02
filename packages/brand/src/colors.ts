@@ -16,7 +16,14 @@
 //   red    #9F1211 — pricing accent;  warm black #1F1816 + taupe #C2B19C —
 //          the floor-plan template's side panel
 // The collateral never uses navy, so dark panels use the floor-plan warm
-// black. The logo SVGs keep their own embedded #E04D22 (official asset files,
+// black.
+//
+// Official brand palette (2026-10-02): "Application Presentation Color
+// pallete.pdf" (Evakee) defines six swatches — #E24625 orange, #D13611 deep
+// orange, #1F1916 warm black, #EDCFA4 sand, #C7B8A5 taupe, #DFE4E3 mist —
+// used on the business card, billboard, QR card, envelope and email
+// signature (sand grounds + orange blocks + warm black). Those exact values
+// win over the sampled ones above where they overlap. The logo SVGs keep their own embedded #E04D22 (official asset files,
 // visually identical to #E24625) — don't recolour them.
 //
 // This replaced the earlier navy-based palette from the Evakee brand sheet
@@ -42,12 +49,17 @@ export const colors = {
   ink: "#2E2B2B",       // body text
 
   // Beyond the ground/ink mapping (names kept from the navy-era palette)
-  navy: "#1F1816",      // dark panels, footer — floor-plan warm black
+  navy: "#1F1916",      // dark panels, footer — official warm black
   royal: "#9F1211",     // deep red accent (pricing catalogue)
   royalAlt: "#9F1211",
   sky: "#F4A28C",       // light orange — labels on dark panels
-  skySoft: "#FCE9E4",   // orange tint — section bands, highlighted rows
-  stone: "#C2B19C",     // taupe (floor-plan template)
+  skySoft: "#F6EAD8",   // light sand (tint of #EDCFA4) — section bands
+  stone: "#C7B8A5",     // official taupe
+
+  // Official palette additions (Application Presentation Color pallete.pdf)
+  brandDeep: "#D13611", // deep orange — hover/pressed, emphasis
+  cream: "#EDCFA4",     // sand — signature ground (business card, billboard)
+  mist: "#DFE4E3",      // cool light neutral
 } as const;
 
 export type BrandColor = keyof typeof colors;

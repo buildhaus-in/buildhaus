@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark, DotGrid } from "./brand-mark";
 import { PORTAL_URL } from "@/lib/env";
 
 // Shared header/footer for every public, no-login page (home, about,
@@ -92,8 +93,16 @@ const FOOTER_COLUMNS: { title: string; links: { href: string; label: string }[] 
 
 export function PublicFooter() {
   return (
-    <footer className="bg-navy print:hidden">
-      <div className="mx-auto max-w-5xl px-5 py-12">
+    <footer className="relative overflow-hidden bg-navy print:hidden">
+      {/* Oversized mark on a dot grid — the envelope / email-signature
+          treatment from the brand collateral. */}
+      <DotGrid className="pointer-events-none absolute -right-6 top-0 h-full w-80 text-white/10" />
+      <BrandMark className="pointer-events-none absolute -bottom-20 -right-12 w-72 text-brand/[0.18] sm:w-96" />
+      <div className="relative mx-auto max-w-5xl px-5 py-12">
+        {/* Tagline from the brand email signature / banner. */}
+        <p className="mb-10 max-w-2xl font-display text-2xl font-bold leading-snug text-white sm:text-3xl">
+          Your trusted partner for <span className="text-brand">design-led homes</span>, from blueprint to handover.
+        </p>
         <div className="grid gap-8 sm:grid-cols-4">
           <div>
             {/* eslint-disable-next-line @next/next/no-img-element -- see PublicHeader above */}
@@ -106,7 +115,7 @@ export function PublicFooter() {
           </div>
           {FOOTER_COLUMNS.map((col) => (
             <div key={col.title}>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-sky">{col.title}</div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-cream">{col.title}</div>
               <ul className="mt-3 space-y-2">
                 {col.links.map((l) => (
                   <li key={l.href}>
