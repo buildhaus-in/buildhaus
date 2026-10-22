@@ -164,3 +164,69 @@ export async function getSignedDownloadUrl(relPath: string): Promise<string | nu
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
 }
+
+// ---------------------------------------------------------------------------
+// Direct browser → Storage uploads. The production portal runs on Vercel,
+// which rejects any request body over 4.5MB before a Server Action sees it,
+// so drawings/documents up to 10MB can't travel through the action itself.
+// Instead the action that renders the form hands the browser a one-time
+// signed upload URL (createDirectUpload), the browser PUTs the file straight
+// to the private bucket, and the form submits only the resulting path —
+// which the receiving action re-checks with verifyDirectUpload() (folder,
+// name shape, real size and MIME type from Storage) before trusting it.
+// Demo Mode has no Storage and no Vercel limit, so it returns null and the
+// form falls back to the ordinary in-form upload.
+// ---------------------------------------------------------------------------
+export type DirectUploadTarget = { uploadUrl: string; path: string };
+
+export async function createDirectUpload(input: { folder: string; filename: string }): Promise<DirectUploadTarget | null> {
+  if (isDemoMode()) return null;
+  const folder = safeFolder(input.folder);
+  const [kind, ...rest] = folder.split("/");
+  const bucket = BUCKET_BY_KIND[kind];
+  if (!bucket || rest.length === 0) {
+    throw new Error(`createDirectUpload: no Supabase Storage bucket configured for upload kind "${kind}".`);
+  }
+  const generatedName = `${crypto.randomUUID()}${safeExtension(input.filename)}`;
+  const objectKey = `${rest.join("/")}/${generatedName}`;
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from(bucket).createSignedUploadUrl(objectKey);
+  if (error || !data?.signedUrl) {
+    throw new Error(`createDirectUpload: couldn't create an upload URL: ${error?.message ?? "unknown error"}`);
+  }
+  return { uploadUrl: data.signedUrl, path: `${folder}/${generatedName}` };
+}
+
+const DIRECT_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.[a-z0-9]{1,10})?$/;
+
+// Confirms a path the browser claims it uploaded really is a file this app
+// issued for exactly `expectedFolder`, and returns Storage's own record of
+// its size and type (never the client's). Null = reject.
+export async function verifyDirectUpload(
+  relPath: string,
+  expectedFolder: string
+): Promise<{ url: string; size: number; type: string } | null> {
+  const folder = safeFolder(expectedFolder);
+  if (!relPath.startsWith(`${folder}/`)) return null;
+  const name = relPath.slice(folder.length + 1);
+  if (!DIRECT_NAME.test(name)) return null;
+  const [kind, ...rest] = folder.split("/");
+  const bucket = BUCKET_BY_KIND[kind];
+  if (!bucket || rest.length === 0) return null;
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from(bucket).list(rest.join("/"), { search: name, limit: 5 });
+  const obj = !error ? (data ?? []).find((o: any) => o.name === name) : undefined;
+  if (!obj) return null;
+  const meta: any = (obj as any).metadata ?? {};
+  return { url: `/uploads/${relPath}`, size: Number(meta.size ?? meta.contentLength ?? 0), type: String(meta.mimetype ?? "") };
+}
+
+// Removes a directly-uploaded object that failed verification (too large,
+// wrong type) so rejected files don't linger in the bucket.
+export async function removeUpload(relPath: string): Promise<void> {
+  if (isDemoMode()) return;
+  const [kind, ...rest] = (relPath || "").split("/");
+  const bucket = BUCKET_BY_KIND[kind];
+  if (!bucket || rest.length === 0) return;
+  await createAdminClient().storage.from(bucket).remove([rest.join("/")]);
+}

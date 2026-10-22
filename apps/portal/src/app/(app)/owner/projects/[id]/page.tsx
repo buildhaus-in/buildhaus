@@ -1,10 +1,11 @@
 import { createClient } from "@buildhaus/database";
-import { Card, StatCard, ProgressBar, StatusBadge, Badge } from "@buildhaus/ui";
+import { Card, StatCard, ProgressBar, StatusBadge, Badge, ActionForm, SubmitButton, Input, Select, Textarea } from "@buildhaus/ui";
 import { EmptyState } from "@buildhaus/ui";
 import { inr, sqft, dateLabel } from "@buildhaus/utils";
 import { assessDelay, riskTone } from "@buildhaus/utils";
 import { notFound } from "next/navigation";
 import { DocumentUploadForm } from "./DocumentUploadForm";
+import { createTask, reviewTask } from "../actions";
 
 const CATEGORY_TONE: Record<string, "ok" | "warn" | "danger" | "muted" | "brand"> = {
   legal: "brand", approvals: "ok",
@@ -26,7 +27,7 @@ export default async function ProjectDetail({ params }: { params: { id: string }
   });
 
   const [{ data: stages }, { data: members }, { data: tasks }, { data: documents }] = await Promise.all([
-    supabase.from("project_stages").select("seq,name,status,progress").eq("project_id", project.id).order("seq"),
+    supabase.from("project_stages").select("id,seq,name,status,progress").eq("project_id", project.id).order("seq"),
     // project_members has two FKs to profiles (profile_id, assigned_by) —
     // PostgREST can't auto-resolve which one a bare embedded `profiles(...)`
     // means and rejects the query outright ("more than one relationship
@@ -38,12 +39,19 @@ export default async function ProjectDetail({ params }: { params: { id: string }
     // point at profile_id — confirming that's the intended relationship —
     // which is exactly why this never surfaced there. `!profile_id` names
     // the FK explicitly, same resolution PostgREST needs spelled out.
-    supabase.from("project_members").select("role_key, profiles!profile_id(full_name)").eq("project_id", project.id),
-    supabase.from("tasks").select("id,title,status").eq("project_id", project.id).limit(6),
+    supabase.from("project_members").select("profile_id, role_key, profiles!profile_id(full_name)").eq("project_id", project.id),
+    // tasks has three FKs to profiles (site_engineer_id, architect_id,
+    // created_by) — the engineer is named explicitly for the same reason as
+    // project_members above.
+    supabase.from("tasks").select("id,title,status,priority,progress,due_date,profiles!site_engineer_id(full_name)").eq("project_id", project.id).order("created_at", { ascending: false }).limit(40),
     supabase.from("documents").select("id,title,category,file_url,client_visible,uploaded_at").eq("project_id", project.id).order("uploaded_at", { ascending: false }),
   ]);
 
   const margin = (project.contract_value ?? 0) - (project.estimated_cost ?? 0);
+  const engineers = (members ?? []).filter((m: any) => m.role_key === "site_engineer");
+  const taskList = tasks ?? [];
+  const awaitingReview = taskList.filter((t: any) => t.status === "submitted");
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="space-y-6">
@@ -113,21 +121,94 @@ export default async function ProjectDetail({ params }: { params: { id: string }
         </Card>
 
         <Card>
-          <h2 className="mb-3 font-bold text-ivory">Recent tasks</h2>
-          {(!tasks || tasks.length === 0) ? (
-            <div className="text-sm text-muted">No tasks created yet.</div>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="font-bold text-ivory">Tasks</h2>
+            {awaitingReview.length > 0 && <Badge tone="warn">{awaitingReview.length} awaiting review</Badge>}
+          </div>
+          {taskList.length === 0 ? (
+            <div className="text-sm text-muted">No tasks yet — create one below.</div>
           ) : (
-            <div className="space-y-2">
-              {tasks.map((t: any) => (
-                <div key={t.id} className="flex items-center justify-between">
-                  <span className="text-sm text-sandlight">{t.title}</span>
-                  <StatusBadge status={t.status} />
-                </div>
-              ))}
+            <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
+              {taskList.map((t: any) => {
+                const overdue = t.due_date && t.due_date < today && !["completed", "approved", "cancelled"].includes(t.status);
+                return (
+                  <div key={t.id} className="rounded-lg border border-border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-sandlight">{t.title}</div>
+                        <div className="mt-0.5 text-xs text-muted">
+                          {t.profiles?.full_name ?? "Unassigned"} · {t.progress ?? 0}% · due{" "}
+                          <span className={overdue ? "font-semibold text-danger" : ""}>{dateLabel(t.due_date)}</span>
+                        </div>
+                      </div>
+                      <StatusBadge status={t.status} />
+                    </div>
+                    {t.status === "submitted" && (
+                      <div className="mt-3 space-y-2 border-t border-border pt-3">
+                        <ActionForm action={reviewTask} successMessage="Task approved.">
+                          <input type="hidden" name="task_id" value={t.id} />
+                          <input type="hidden" name="decision" value="approve" />
+                          <SubmitButton pendingLabel="Approving…">Approve</SubmitButton>
+                        </ActionForm>
+                        <ActionForm action={reviewTask} successMessage="Returned to the engineer.">
+                          <input type="hidden" name="task_id" value={t.id} />
+                          <input type="hidden" name="decision" value="return" />
+                          <div className="flex items-end gap-2">
+                            <Input name="reason" label="Or return with a reason" placeholder="What needs fixing?" required className="flex-1" />
+                            <SubmitButton variant="outline" pendingLabel="Returning…">Return</SubmitButton>
+                          </div>
+                        </ActionForm>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </Card>
       </div>
+
+      <Card>
+        <h2 className="mb-1 font-bold text-ivory">Create a task</h2>
+        <p className="mb-3 text-xs text-muted">The assigned engineer sees it straight away on their Today and Tasks screens.</p>
+        {engineers.length === 0 ? (
+          <div className="text-sm text-muted">Assign a site engineer to this project (Users) before creating tasks.</div>
+        ) : (
+          <ActionForm action={createTask.bind(null, project.id)} successMessage="Task created and assigned." className="grid gap-x-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <Input label="Title" name="title" required maxLength={200} placeholder="2nd floor slab shuttering" />
+            </div>
+            <Select label="Assign to" name="site_engineer_id" required defaultValue={engineers.length === 1 ? engineers[0].profile_id : ""}>
+              {engineers.length > 1 && <option value="" disabled>Choose engineer</option>}
+              {engineers.map((m: any) => <option key={m.profile_id} value={m.profile_id}>{m.profiles?.full_name ?? "Engineer"}</option>)}
+            </Select>
+            <Select label="Stage" name="stage_id" defaultValue="">
+              <option value="">— None —</option>
+              {(stages ?? []).map((st: any) => <option key={st.id} value={st.id}>{st.seq}. {st.name}</option>)}
+            </Select>
+            <Select label="Priority" name="priority" defaultValue="medium">
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </Select>
+            <Input label="Drawing ref" name="drawing_ref" placeholder="S-201" />
+            <Input label="Start date" name="start_date" type="date" />
+            <Input label="Due date" name="due_date" type="date" />
+            <Input label="Floor" name="floor" placeholder="2nd floor" />
+            <Input label="Zone" name="zone" placeholder="Grid A–C" />
+            <div className="sm:col-span-2">
+              <Textarea label="Description" name="description" placeholder="What needs to be done" />
+            </div>
+            <div className="sm:col-span-2">
+              <Textarea label="Instructions for the engineer" name="instructions" placeholder="Checks, cautions, quality points" />
+            </div>
+            <div className="sm:col-span-2">
+              <Textarea label="Checklist (one item per line)" name="checklist" placeholder={"Props and staging erected\nLevel and camber checked"} />
+            </div>
+            <div className="sm:col-span-2"><SubmitButton pendingLabel="Creating…">Create task</SubmitButton></div>
+          </ActionForm>
+        )}
+      </Card>
 
       <Card>
         <h2 className="mb-3 font-bold text-ivory">Construction stages</h2>

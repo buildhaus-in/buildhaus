@@ -24,12 +24,16 @@ function splitTopLevel(str: string, sep: string): string[] {
   return out.map((s) => s.trim()).filter(Boolean);
 }
 
-interface SelectNode { name: string; cols?: string; embed?: SelectNode[] }
+interface SelectNode { name: string; cols?: string; embed?: SelectNode[]; fk?: string; alias?: string }
 
 function parseSelect(str: string): SelectNode[] {
   return splitTopLevel(str, ",").map((part) => {
-    const m = part.match(/^([\w]+)\((.*)\)$/s);
-    if (m) return { name: m[1], embed: parseSelect(m[2]) };
+    // "profiles!site_engineer_id(full_name)" — PostgREST's explicit-FK
+    // embed, required on the real schema wherever a table has more than one
+    // FK to the same target (tasks, project_members, daily_reports …).
+    // An optional "alias:" prefix renames the embedded key, as PostgREST does.
+    const m = part.match(/^(?:([\w]+):)?([\w]+)(?:!([\w]+))?\((.*)\)$/s);
+    if (m) return { alias: m[1], name: m[2], fk: m[3], embed: parseSelect(m[4]) };
     // "alias:column" not needed anywhere yet; keep plain column names.
     return { name: part };
   });
@@ -43,17 +47,20 @@ function projectRow(table: string, row: Row, spec: SelectNode[], db: DemoDB): Ro
       continue;
     }
     if (node.embed) {
-      const rel = RELATIONS[table]?.[node.name];
+      const key = node.alias ?? node.name;
+      const rel = node.fk
+        ? { table: node.name, type: "belongsTo" as const, localKey: node.fk }
+        : RELATIONS[table]?.[key] ?? RELATIONS[table]?.[node.name];
       if (!rel) {
-        out[node.name] = null;
+        out[key] = null;
         continue;
       }
       if (rel.type === "belongsTo") {
         const target = db.table(rel.table).find((r) => r.id === row[rel.localKey!]);
-        out[node.name] = target ? projectRow(rel.table, target, node.embed, db) : null;
+        out[key] = target ? projectRow(rel.table, target, node.embed, db) : null;
       } else {
         const targets = db.table(rel.table).filter((r) => r[rel.foreignKey!] === row.id);
-        out[node.name] = targets.map((t) => projectRow(rel.table, t, node.embed!, db));
+        out[key] = targets.map((t) => projectRow(rel.table, t, node.embed!, db));
       }
     } else {
       out[node.name] = row[node.name];

@@ -17,6 +17,7 @@ export function FileUpload({
   required,
   helperText,
   disabled,
+  direct,
 }: {
   name: string;
   label?: string;
@@ -24,6 +25,13 @@ export function FileUpload({
   required?: boolean;
   helperText?: string;
   disabled?: boolean;
+  // Upload straight to Storage as soon as a file is chosen, instead of
+  // inside the form submit — for files that can exceed the hosting
+  // platform's 4.5MB request cap (drawings, documents). Typically a Server
+  // Action that checks access and returns a signed upload URL; "inline"
+  // (Demo Mode) keeps the file in the form as before. The form then
+  // submits `<name>__path` instead of the file.
+  direct?: (meta: { name: string; size: number; type: string }) => Promise<DirectUploadPrep>;
 }) {
   const limits = UPLOAD_LIMITS[kind];
   const inputId = useId();
@@ -36,12 +44,20 @@ export function FileUpload({
   // DOM tree at render time.
   const { pending } = useFormStatus();
   const [compressing, setCompressing] = useState(false);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [uploadedPath, setUploadedPath] = useState("");
+  // Not disabled while a direct upload runs: a disabled input skips native
+  // validation, and its "still uploading" custom validity is what stops
+  // the form being submitted mid-upload.
   const isDisabled = disabled || pending || compressing;
+  const uploadSeq = useRef(0);
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const input = e.target;
     let file = input.files?.[0];
     setError("");
+    setUploadedPath("");
+    input.setCustomValidity("");
     if (!file) {
       setFileName("");
       return;
@@ -73,6 +89,36 @@ export function FileUpload({
       return;
     }
     setFileName(file.name);
+
+    if (direct) {
+      const seq = ++uploadSeq.current;
+      const stale = () => seq !== uploadSeq.current;
+      // Blocks the form's own submit (native validation) until the file is
+      // safely in Storage, so a half-finished upload can't be submitted.
+      input.setCustomValidity("Wait for the file to finish uploading.");
+      setUploadPct(0);
+      try {
+        const prep = await direct({ name: file.name, size: file.size, type: file.type });
+        if (!prep.ok) throw new Error(prep.error);
+        if (prep.mode === "direct") {
+          await putWithProgress(prep.uploadUrl, file, (n) => !stale() && setUploadPct(n));
+          if (stale()) return; // a different file was chosen meanwhile
+          setUploadedPath(prep.path);
+          // The file now lives in Storage — don't also send its bytes with
+          // the form (that's the request that would hit the size cap).
+          input.value = "";
+        }
+        input.setCustomValidity("");
+      } catch (err: any) {
+        if (stale()) return;
+        input.setCustomValidity("");
+        setError(err?.message || "Upload failed — please try again.");
+        setFileName("");
+        input.value = "";
+      } finally {
+        if (!stale()) setUploadPct(null);
+      }
+    }
   }
 
   return (
@@ -104,7 +150,7 @@ export function FileUpload({
         type="file"
         name={name}
         accept={limits.accept}
-        required={required}
+        required={required && !uploadedPath}
         disabled={isDisabled}
         onChange={handleChange}
         className="sr-only"
@@ -114,10 +160,37 @@ export function FileUpload({
       ) : (
         <div className="mt-1 text-xs text-muted">{helperText ?? limits.label}</div>
       )}
+      <input type="hidden" name={`${name}__path`} value={uploadedPath} />
       {compressing && <div className="mt-1 text-xs text-brand">Preparing photo…</div>}
+      {uploadPct !== null && <div className="mt-1 text-xs text-brand">Uploading… {uploadPct}%</div>}
+      {uploadedPath && uploadPct === null && <div className="mt-1 text-xs text-ok">Uploaded ✓</div>}
       {pending && <div className="mt-1 text-xs text-brand">Uploading…</div>}
     </div>
   );
+}
+
+export type DirectUploadPrep =
+  | { ok: true; mode: "inline" }
+  | { ok: true; mode: "direct"; uploadUrl: string; path: string }
+  | { ok: false; error: string };
+
+// Same request supabase-js's uploadToSignedUrl() makes (PUT, multipart with
+// a cacheControl field), via XHR so the picker can show progress.
+function putWithProgress(url: string, file: File, onPct: (n: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const body = new FormData();
+    body.append("cacheControl", "3600");
+    body.append("", file);
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onPct(Math.min(99, Math.round((e.loaded / e.total) * 100)));
+    };
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("Upload failed — please try again.")));
+    xhr.onerror = () => reject(new Error("Upload failed — check your connection and try again."));
+    xhr.send(body);
+  });
 }
 
 // Longest edge and JPEG quality for site photos — plenty for reading a

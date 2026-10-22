@@ -1,9 +1,10 @@
 "use client";
+import { useRef } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Card, Button, FileUpload } from "@buildhaus/ui";
 import { Input, Select, Textarea } from "@buildhaus/ui";
 import { ErrorState } from "@buildhaus/ui";
-import { createDrawing, type DrawingFormState } from "../actions";
+import { createDrawing, prepareDrawingUpload, type DrawingFormState } from "../actions";
 
 const DISCIPLINES = ["architectural", "structural", "electrical", "plumbing", "interior", "elevation", "landscape", "shop_drawing", "as_built"];
 
@@ -18,10 +19,14 @@ function Submit() {
 
 export function UploadDrawingForm({ projects }: { projects: { id: string; code: string; name: string }[] }) {
   const [state, formAction] = useFormState<DrawingFormState, FormData>(createDrawing, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  // The file is stored under the chosen project's folder, so it's read at
+  // the moment the file is picked.
+  const selectedProject = () => String(new FormData(formRef.current ?? undefined).get("project_id") || "");
 
   return (
     <Card>
-      <form action={formAction} className="grid gap-x-4 sm:grid-cols-2">
+      <form ref={formRef} action={formAction} className="grid gap-x-4 sm:grid-cols-2">
         <Select label="Project" name="project_id" required defaultValue="">
           <option value="" disabled>Select a project</option>
           {projects.map((p) => (
@@ -37,7 +42,7 @@ export function UploadDrawingForm({ projects }: { projects: { id: string; code: 
           <Input label="Title" name="title" placeholder="Kitchen layout detail" required />
         </div>
         <div className="sm:col-span-2">
-          <FileUpload name="file" label="Drawing file" kind="drawing" required />
+          <FileUpload name="file" label="Drawing file" kind="drawing" required direct={(meta) => prepareDrawingUpload({ projectId: selectedProject() }, meta)} helperText="Choose the project first — PDF or image, max 10MB." />
         </div>
         <div className="sm:col-span-2">
           <Textarea label="Notes" name="notes" placeholder="First issue for internal review." />

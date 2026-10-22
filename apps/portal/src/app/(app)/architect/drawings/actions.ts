@@ -1,13 +1,6 @@
 "use server";
-import { createClient, uploadFile } from "@buildhaus/database";
-import { validateFile } from "@buildhaus/utils";
-// `File` only became a Node.js global in v20 — nothing here previously
-// imported it, so `instanceof File` below crashed with "File is not
-// defined" on Node 18. node:buffer has exported a stable File since
-// Node 18.13; aliased rather than shadowing the ambient DOM `File` type
-// this file's own annotations (and uploadFile()'s signature) already rely
-// on — only used for the runtime `instanceof` check below, never as a type.
-import { File as NodeFile } from "node:buffer";
+import { createClient } from "@buildhaus/database";
+import { prepareUpload, receiveFile, type FileMeta, type PrepareUploadResult } from "@/lib/uploads";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
@@ -30,23 +23,34 @@ import { redirect } from "next/navigation";
 
 export type DrawingFormState = { error: string } | null;
 
-// Server-side re-validation of the uploaded file — the <FileUpload>
-// component in @buildhaus/ui already checks this client-side for fast
-// feedback, but the client can never be trusted alone.
-async function uploadDrawingFile(formData: FormData, folder: string): Promise<{ url?: string; error?: string }> {
-  const file = formData.get("file");
-  if (!(file instanceof NodeFile) || file.size <= 0) {
-    return { error: "Please choose a file to upload." };
+// Issues a signed direct-to-Storage upload for a drawing file (see
+// apps/portal/src/lib/uploads.ts) once the caller is confirmed as an
+// Architect/Owner on the project. Pass either the chosen project (new
+// drawing) or the drawing being revised.
+export async function prepareDrawingUpload(
+  target: { projectId?: string; drawingId?: string },
+  meta: FileMeta
+): Promise<PrepareUploadResult> {
+  const supabase = createClient();
+  let ctx;
+  try {
+    ctx = await assertRole("architect");
+  } catch {
+    return { ok: false, error: "You must be signed in as an Architect to upload a drawing." };
   }
-  // Narrowed to node:buffer's File (see the import comment above), not the
-  // ambient DOM File type validateFile()/uploadFile() declare — functionally
-  // compatible (both only ever use .size/.type/.arrayBuffer()/.name here).
-  const webFile = file as unknown as File;
-  const validationError = validateFile(webFile, "drawing");
-  if (validationError) return { error: validationError };
-
-  const { url } = await uploadFile({ file: webFile, filename: webFile.name, folder });
-  return { url };
+  let projectId = target.projectId ?? "";
+  if (target.drawingId) {
+    const { data: drawing } = await supabase.from("drawings").select("project_id").eq("id", target.drawingId).maybeSingle();
+    if (!drawing) return { ok: false, error: "Drawing not found." };
+    projectId = drawing.project_id;
+  }
+  if (!projectId) return { ok: false, error: "Select a project before choosing the file." };
+  try {
+    await assertProjectAccess(supabase, projectId, ctx);
+  } catch {
+    return { ok: false, error: "You are not assigned to this project." };
+  }
+  return prepareUpload(meta, "drawing", `drawings/${projectId}`);
 }
 
 export async function createDrawing(_prevState: DrawingFormState, formData: FormData): Promise<DrawingFormState> {
@@ -66,8 +70,8 @@ export async function createDrawing(_prevState: DrawingFormState, formData: Form
     return { error: "You are not assigned to this project." };
   }
 
-  const uploaded = await uploadDrawingFile(formData, `drawings/${projectId}`);
-  if (uploaded.error) return { error: uploaded.error };
+  const uploaded = await receiveFile(formData, "file", "drawing", `drawings/${projectId}`);
+  if ("error" in uploaded) return { error: uploaded.error };
 
   const { data: drawing, error: drawingError } = await supabase
     .from("drawings")
@@ -129,8 +133,8 @@ export async function createRevision(
   // folder above, and required so the /uploads route and the real-Supabase
   // storage.objects RLS policy (both project-scoped by path) can resolve
   // which project this file belongs to from the path alone.
-  const uploaded = await uploadDrawingFile(formData, `drawings/${drawing.project_id}`);
-  if (uploaded.error) return { error: uploaded.error };
+  const uploaded = await receiveFile(formData, "file", "drawing", `drawings/${drawing.project_id}`);
+  if ("error" in uploaded) return { error: uploaded.error };
 
   const { error: revisionError } = await supabase.from("drawing_revisions").insert({
     drawing_id: drawingId,

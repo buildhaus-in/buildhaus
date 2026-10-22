@@ -76,3 +76,25 @@ describe("DemoQueryBuilder — filters", () => {
     expect(data.map((r: any) => r.id).sort()).toEqual(["w1", "w2"]);
   });
 });
+
+describe("DemoQueryBuilder — PostgREST embed syntax", () => {
+  const db = () =>
+    new DemoDB({
+      tasks: [{ id: "t1", title: "Slab", site_engineer_id: "p1", created_by: "p2" }],
+      profiles: [
+        { id: "p1", full_name: "Engineer One" },
+        { id: "p2", full_name: "Owner" },
+      ],
+    });
+
+  it("resolves an explicit-FK embed (table!fk(cols)) through that column", async () => {
+    const { data } = await new DemoQueryBuilder(db(), "tasks").select("id, profiles!site_engineer_id(full_name)");
+    expect(data[0].profiles).toEqual({ full_name: "Engineer One" });
+  });
+
+  it("returns an aliased embed (alias:table!fk(cols)) under the alias", async () => {
+    const { data } = await new DemoQueryBuilder(db(), "tasks").select("id, creator:profiles!created_by(full_name)");
+    expect(data[0].creator).toEqual({ full_name: "Owner" });
+    expect(data[0].profiles).toBeUndefined();
+  });
+});
