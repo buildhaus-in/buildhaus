@@ -1,6 +1,6 @@
 import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
-import { Card, Badge, StatusBadge, ProgressBar, SubmitButton } from "@buildhaus/ui";
+import { Card, Badge, StatusBadge, ProgressBar, SubmitButton, ActionForm } from "@buildhaus/ui";
 import { Input, Textarea } from "@buildhaus/ui";
 import { dateLabel } from "@buildhaus/utils";
 import { notFound } from "next/navigation";
@@ -15,7 +15,7 @@ export default async function TaskDetail({ params }: { params: { id: string } })
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("*, projects(id,code,name,current_stage)")
+    .select("*, projects(id,code,name,current_stage), project_stages(name)")
     .eq("id", params.id)
     .maybeSingle();
   if (!task || task.site_engineer_id !== ctx?.userId) notFound();
@@ -27,6 +27,11 @@ export default async function TaskDetail({ params }: { params: { id: string } })
     .order("created_at", { ascending: true });
 
   const checklist: { label: string; done: boolean }[] = Array.isArray(task.checklist) ? task.checklist : [];
+  // Live schema links a task to its stage by stage_id and keeps the Owner's
+  // instructions in `notes`; the Demo seed uses flat `stage` /
+  // `owner_instructions` — read whichever is present.
+  const stageName = task.project_stages?.name ?? task.stage ?? null;
+  const instructions = task.owner_instructions ?? task.notes ?? null;
 
   return (
     <div className="space-y-6">
@@ -49,7 +54,7 @@ export default async function TaskDetail({ params }: { params: { id: string } })
 
       <Card>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div><div className="text-[10px] uppercase tracking-wide text-muted">Stage</div><div className="text-sm text-ink">{task.stage ?? "—"}</div></div>
+          <div><div className="text-[10px] uppercase tracking-wide text-muted">Stage</div><div className="text-sm text-ink">{stageName ?? "—"}</div></div>
           <div><div className="text-[10px] uppercase tracking-wide text-muted">Floor</div><div className="text-sm text-ink">{task.floor ?? "—"}</div></div>
           <div><div className="text-[10px] uppercase tracking-wide text-muted">Zone</div><div className="text-sm text-ink">{task.zone ?? "—"}</div></div>
           <div><div className="text-[10px] uppercase tracking-wide text-muted">Drawing ref</div><div className="text-sm text-ink">{task.drawing_ref ?? "—"}</div></div>
@@ -57,10 +62,10 @@ export default async function TaskDetail({ params }: { params: { id: string } })
           <div><div className="text-[10px] uppercase tracking-wide text-muted">Start date</div><div className="text-sm text-ink">{dateLabel(task.start_date)}</div></div>
           <div><div className="text-[10px] uppercase tracking-wide text-muted">Due date</div><div className="text-sm text-ink">{dateLabel(task.due_date)}</div></div>
         </div>
-        {task.owner_instructions && (
+        {instructions && (
           <div className="mt-4 rounded-lg border border-brand/30 bg-brand/10 p-3 text-sm text-sandlight">
             <div className="mb-1 text-[10px] uppercase tracking-wide text-brand">Owner instructions</div>
-            {task.owner_instructions}
+            {instructions}
           </div>
         )}
       </Card>
@@ -71,11 +76,13 @@ export default async function TaskDetail({ params }: { params: { id: string } })
           <span className="text-ink">{task.progress}%</span>
         </div>
         <ProgressBar value={task.progress} height={8} />
-        <form action={updateTaskProgress} className="mt-4 flex items-end gap-2">
-          <input type="hidden" name="task_id" value={task.id} />
-          <Input label="Update progress (%)" name="progress" type="number" min={0} max={100} defaultValue={task.progress} className="max-w-[140px]" />
-          <SubmitButton variant="outline">Save progress</SubmitButton>
-        </form>
+        <ActionForm action={updateTaskProgress} successMessage="Progress saved." resetOnSuccess={false} className="mt-4">
+          <div className="flex items-end gap-2">
+            <input type="hidden" name="task_id" value={task.id} />
+            <Input label="Update progress (%)" name="progress" type="number" min={0} max={100} required defaultValue={task.progress} className="max-w-[140px]" />
+            <SubmitButton variant="outline">Save progress</SubmitButton>
+          </div>
+        </ActionForm>
       </Card>
 
       <Card>
@@ -85,14 +92,14 @@ export default async function TaskDetail({ params }: { params: { id: string } })
         ) : (
           <div className="space-y-2">
             {checklist.map((item, i) => (
-              <form key={i} action={toggleChecklistItem} className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2">
+              <ActionForm key={i} action={toggleChecklistItem} quietSuccess className="rounded-lg border border-border bg-surface px-3 py-2">
                 <input type="hidden" name="task_id" value={task.id} />
                 <input type="hidden" name="index" value={i} />
                 <button type="submit" className="flex items-center gap-3 text-left" aria-label={item.done ? "Mark incomplete" : "Mark complete"}>
                   <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${item.done ? "border-ok bg-ok text-white" : "border-border text-transparent"}`}>✓</span>
                   <span className={`text-sm ${item.done ? "text-muted line-through" : "text-sandlight"}`}>{item.label}</span>
                 </button>
-              </form>
+              </ActionForm>
             ))}
           </div>
         )}
@@ -102,37 +109,39 @@ export default async function TaskDetail({ params }: { params: { id: string } })
         <h2 className="mb-3 font-bold text-ivory">Actions</h2>
         <div className="flex flex-wrap gap-3">
           {task.status === "assigned" && !task.accepted_at && (
-            <form action={acceptTask}>
+            <ActionForm action={acceptTask} successMessage="Task accepted.">
               <input type="hidden" name="task_id" value={task.id} />
               <SubmitButton variant="outline">Accept task</SubmitButton>
-            </form>
+            </ActionForm>
           )}
           {task.status === "assigned" && (
-            <form action={startTask}>
+            <ActionForm action={startTask} successMessage="Work started.">
               <input type="hidden" name="task_id" value={task.id} />
               <SubmitButton>Start work</SubmitButton>
-            </form>
+            </ActionForm>
           )}
           {task.status === "blocked" && (
-            <form action={resumeTask}>
+            <ActionForm action={resumeTask} successMessage="Work resumed.">
               <input type="hidden" name="task_id" value={task.id} />
               <SubmitButton>Resume work</SubmitButton>
-            </form>
+            </ActionForm>
           )}
           {task.status === "in_progress" && (
-            <form action={submitTaskForReview}>
+            <ActionForm action={submitTaskForReview} successMessage="Sent to the Owner for review.">
               <input type="hidden" name="task_id" value={task.id} />
               <SubmitButton pendingLabel="Submitting…">Submit for Owner review</SubmitButton>
-            </form>
+            </ActionForm>
           )}
         </div>
 
         {(task.status === "assigned" || task.status === "in_progress") && (
-          <form action={markTaskBlocked} className="mt-4 flex items-end gap-2">
-            <input type="hidden" name="task_id" value={task.id} />
-            <Textarea label="Mark blocked — reason" name="blocker_reason" className="min-h-[44px] flex-1" placeholder="What's blocking this task?" />
-            <SubmitButton variant="danger">Mark blocked</SubmitButton>
-          </form>
+          <ActionForm action={markTaskBlocked} successMessage="Marked blocked — the Owner can see the reason." className="mt-4">
+            <div className="flex items-end gap-2">
+              <input type="hidden" name="task_id" value={task.id} />
+              <Textarea label="Mark blocked — reason" name="blocker_reason" required className="min-h-[44px] flex-1" placeholder="What's blocking this task?" />
+              <SubmitButton variant="danger">Mark blocked</SubmitButton>
+            </div>
+          </ActionForm>
         )}
         {task.status === "submitted" && (
           <div className="mt-3 text-sm text-muted">Submitted — awaiting Owner review.</div>
@@ -156,11 +165,13 @@ export default async function TaskDetail({ params }: { params: { id: string } })
             ))
           )}
         </div>
-        <form action={addTaskComment} className="mt-4 flex items-end gap-2">
-          <input type="hidden" name="task_id" value={task.id} />
-          <Textarea label="Add a comment" name="body" className="min-h-[44px] flex-1" placeholder="Update the Owner on this task…" />
-          <SubmitButton variant="outline">Post</SubmitButton>
-        </form>
+        <ActionForm action={addTaskComment} successMessage="Comment posted." className="mt-4">
+          <div className="flex items-end gap-2">
+            <input type="hidden" name="task_id" value={task.id} />
+            <Textarea label="Add a comment" name="body" required className="min-h-[44px] flex-1" placeholder="Update the Owner on this task…" />
+            <SubmitButton variant="outline">Post</SubmitButton>
+          </div>
+        </ActionForm>
       </Card>
     </div>
   );

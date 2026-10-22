@@ -1,7 +1,8 @@
 "use server";
 import { createClient } from "@buildhaus/database";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
-import { throwIfError } from "@/lib/mutation";
+import { unwrap } from "@/lib/mutation";
+import type { ActionResult } from "@buildhaus/validation";
 import { revalidatePath } from "next/cache";
 
 function revalidateTask(taskId: string) {
@@ -26,145 +27,114 @@ async function requireTaskAccess(supabase: any, taskId: string) {
   return ctx;
 }
 
-// "Accept" is an assignment confirmation, not a status change — it just
-// timestamps that the engineer has seen and acknowledged the task. Use
-// "Start" to actually move it into progress.
-export async function acceptTask(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  throwIfError(
-    await supabase.from("tasks").update({ accepted_at: new Date().toISOString() }).eq("id", taskId),
-    "Couldn't accept the task."
-  );
-  revalidateTask(taskId);
-}
+type Result = ActionResult<null>;
 
-export async function startTask(formData: FormData) {
+// Shared shape for every task mutation: resolve access, run the update, and
+// turn every failure into a specific message for <ActionForm> — previously
+// a failed auth check, an empty reason/comment, or a task whose status had
+// already moved on all returned silently, so the button looked like it did
+// nothing. Status-guarded updates select the rows they touched so "0 rows"
+// is reported instead of passing as success.
+async function taskMutation(
+  formData: FormData,
+  run: (supabase: any, taskId: string, ctx: Awaited<ReturnType<typeof requireTaskAccess>>) => Promise<Result>
+): Promise<Result> {
   const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  throwIfError(
-    await supabase.from("tasks").update({ status: "in_progress" }).eq("id", taskId).eq("status", "assigned"),
-    "Couldn't start the task."
-  );
-  revalidateTask(taskId);
-}
-
-export async function updateTaskProgress(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  const progress = Math.max(0, Math.min(100, Number(formData.get("progress") || 0)));
-  const { data: task } = await supabase.from("tasks").select("status").eq("id", taskId).maybeSingle();
-  const patch: Record<string, any> = { progress };
-  if (task?.status === "assigned") patch.status = "in_progress";
-  throwIfError(
-    await supabase.from("tasks").update(patch).eq("id", taskId),
-    "Couldn't update task progress."
-  );
-  revalidateTask(taskId);
-}
-
-export async function markTaskBlocked(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  const reason = String(formData.get("blocker_reason") || "").trim();
-  if (!reason) return;
-  throwIfError(
-    await supabase.from("tasks").update({ status: "blocked", blocker_reason: reason }).eq("id", taskId),
-    "Couldn't mark the task as blocked."
-  );
-  revalidateTask(taskId);
-}
-
-export async function resumeTask(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  throwIfError(
-    await supabase.from("tasks").update({ status: "in_progress", blocker_reason: null }).eq("id", taskId).eq("status", "blocked"),
-    "Couldn't resume the task."
-  );
-  revalidateTask(taskId);
-}
-
-export async function submitTaskForReview(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  throwIfError(
-    await supabase.from("tasks").update({ status: "submitted" }).eq("id", taskId).eq("status", "in_progress"),
-    "Couldn't submit the task for review."
-  );
-  revalidateTask(taskId);
-}
-
-export async function toggleChecklistItem(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
-  try {
-    await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
-  }
-  const index = Number(formData.get("index"));
-  const { data: task } = await supabase.from("tasks").select("checklist").eq("id", taskId).maybeSingle();
-  const checklist = Array.isArray(task?.checklist) ? [...task.checklist] : [];
-  if (checklist[index]) {
-    checklist[index] = { ...checklist[index], done: !checklist[index].done };
-    throwIfError(
-      await supabase.from("tasks").update({ checklist }).eq("id", taskId),
-      "Couldn't update the checklist."
-    );
-  }
-  revalidateTask(taskId);
-}
-
-export async function addTaskComment(formData: FormData) {
-  const supabase = createClient();
-  const taskId = String(formData.get("task_id"));
+  const taskId = String(formData.get("task_id") || "");
+  if (!taskId) return { ok: false, error: "Missing task — reload the page." };
   let ctx;
   try {
     ctx = await requireTaskAccess(supabase, taskId);
-  } catch {
-    return;
+  } catch (e: any) {
+    return { ok: false, error: e?.message === "Task not found" ? "This task no longer exists." : "You're not assigned to this task's project." };
   }
-  const body = String(formData.get("body") || "").trim();
-  if (!body) return;
-  throwIfError(
-    await supabase.from("task_comments").insert({
-      task_id: taskId,
-      author_id: ctx.userId,
-      body,
-      created_at: new Date().toISOString(),
-    }),
-    "Couldn't add the comment."
-  );
-  revalidateTask(taskId);
+  const result = await run(supabase, taskId, ctx);
+  if (result.ok) revalidateTask(taskId);
+  return result;
+}
+
+async function guardedUpdate(supabase: any, taskId: string, patch: Record<string, any>, fromStatus: string | null, failMsg: string): Promise<Result> {
+  let q = supabase.from("tasks").update(patch).eq("id", taskId);
+  if (fromStatus) q = q.eq("status", fromStatus);
+  const { data, error } = await q.select("id");
+  if (error) return { ok: false, error: error.message || failMsg };
+  if (!data || data.length === 0) return { ok: false, error: "This task's status has changed — reload the page." };
+  return { ok: true, data: null };
+}
+
+// "Accept" is an assignment confirmation, not a status change — it just
+// timestamps that the engineer has seen and acknowledged the task. Use
+// "Start" to actually move it into progress.
+export async function acceptTask(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, (supabase, taskId) =>
+    guardedUpdate(supabase, taskId, { accepted_at: new Date().toISOString() }, null, "Couldn't accept the task."));
+}
+
+export async function startTask(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, (supabase, taskId) =>
+    guardedUpdate(supabase, taskId, { status: "in_progress" }, "assigned", "Couldn't start the task."));
+}
+
+export async function updateTaskProgress(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, async (supabase, taskId) => {
+    const raw = String(formData.get("progress") ?? "").trim();
+    const progress = Number(raw);
+    if (raw === "" || !Number.isFinite(progress) || progress < 0 || progress > 100) {
+      return { ok: false, error: "Enter a progress between 0 and 100." };
+    }
+    const { data: task } = await supabase.from("tasks").select("status").eq("id", taskId).maybeSingle();
+    const patch: Record<string, any> = { progress: Math.round(progress) };
+    if (task?.status === "assigned") patch.status = "in_progress";
+    return guardedUpdate(supabase, taskId, patch, null, "Couldn't update task progress.");
+  });
+}
+
+export async function markTaskBlocked(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, async (supabase, taskId) => {
+    const reason = String(formData.get("blocker_reason") || "").trim();
+    if (!reason) return { ok: false, error: "Say what's blocking this task." };
+    const { data: task } = await supabase.from("tasks").select("status").eq("id", taskId).maybeSingle();
+    if (!task || !["assigned", "in_progress"].includes(task.status)) {
+      return { ok: false, error: "This task's status has changed — reload the page." };
+    }
+    return guardedUpdate(supabase, taskId, { status: "blocked", blocker_reason: reason }, task.status, "Couldn't mark the task as blocked.");
+  });
+}
+
+export async function resumeTask(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, (supabase, taskId) =>
+    guardedUpdate(supabase, taskId, { status: "in_progress", blocker_reason: null }, "blocked", "Couldn't resume the task."));
+}
+
+export async function submitTaskForReview(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, (supabase, taskId) =>
+    guardedUpdate(supabase, taskId, { status: "submitted" }, "in_progress", "Couldn't submit the task for review."));
+}
+
+export async function toggleChecklistItem(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, async (supabase, taskId) => {
+    const index = Number(formData.get("index"));
+    const { data: task } = await supabase.from("tasks").select("checklist").eq("id", taskId).maybeSingle();
+    const checklist = Array.isArray(task?.checklist) ? [...task.checklist] : [];
+    if (!Number.isInteger(index) || !checklist[index]) return { ok: false, error: "Checklist changed — reload the page." };
+    checklist[index] = { ...checklist[index], done: !checklist[index].done };
+    return guardedUpdate(supabase, taskId, { checklist }, null, "Couldn't update the checklist.");
+  });
+}
+
+export async function addTaskComment(_prev: Result | null, formData: FormData): Promise<Result> {
+  return taskMutation(formData, async (supabase, taskId, ctx) => {
+    const body = String(formData.get("body") || "").trim();
+    if (!body) return { ok: false, error: "Write a comment first." };
+    const res = unwrap(
+      await supabase.from("task_comments").insert({
+        task_id: taskId,
+        author_id: ctx.userId,
+        body,
+        created_at: new Date().toISOString(),
+      }),
+      "Couldn't add the comment."
+    );
+    return res.ok ? { ok: true, data: null } : res;
+  });
 }

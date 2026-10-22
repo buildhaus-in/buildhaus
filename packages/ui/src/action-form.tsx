@@ -59,12 +59,16 @@ export function ActionForm<T = unknown>({
   className,
   children,
   resetOnSuccess = true,
+  quietSuccess = false,
 }: {
   action: (prevState: FormActionResult<T> | null, formData: FormData) => Promise<FormActionResult<T> | null>;
   successMessage?: string | ((data: T) => string);
   className?: string;
   children: ReactNode;
   resetOnSuccess?: boolean;
+  // For small in-place toggles (e.g. a checklist tick) where the re-rendered
+  // control already shows the change — errors are still always shown.
+  quietSuccess?: boolean;
 }) {
   const [state, formAction] = useFormState<FormActionResult<T> | null, FormData>(action, null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -82,7 +86,7 @@ export function ActionForm<T = unknown>({
           <ErrorState message={state.error} />
         </div>
       )}
-      {state?.ok && (
+      {state?.ok && !quietSuccess && (
         <div className="mt-3">
           <SuccessState
             message={typeof successMessage === "function" ? successMessage(state.data) : successMessage ?? "Saved."}

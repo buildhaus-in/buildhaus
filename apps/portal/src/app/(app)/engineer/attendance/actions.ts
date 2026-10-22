@@ -36,12 +36,12 @@ export async function logAttendance(
     return { ok: false, error: "You are not assigned to this project." };
   }
 
-  const { data: contractor } = await supabase.from("labour_contractors").select("id").limit(1).maybeSingle();
-
   const result = unwrap(
     await supabase.from("labour_attendance").insert({
       project_id: projectId,
-      contractor_id: contractor?.id ?? null,
+      // Not guessed: labour_contractors is Owner-only under RLS, and the
+      // form doesn't ask which contractor's crew this is.
+      contractor_id: null,
       attendance_date: attendanceDate,
       trade,
       present_count: presentCount,

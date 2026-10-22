@@ -32,6 +32,7 @@ export const RELATIONS: Record<string, Record<string, Relation>> = {
   tasks: {
     site_engineer: { table: "profiles", type: "belongsTo", localKey: "site_engineer_id" },
     projects: { table: "projects", type: "belongsTo", localKey: "project_id" },
+    project_stages: { table: "project_stages", type: "belongsTo", localKey: "stage_id" },
   },
   task_comments: {
     profiles: { table: "profiles", type: "belongsTo", localKey: "author_id" },
