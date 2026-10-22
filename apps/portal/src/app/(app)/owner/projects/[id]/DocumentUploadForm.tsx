@@ -3,7 +3,8 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Card, Button, FileUpload } from "@buildhaus/ui";
 import { Input, Select } from "@buildhaus/ui";
 import { ErrorState } from "@buildhaus/ui";
-import { uploadDocument, prepareDocumentUpload, type DocumentFormState } from "../actions";
+import { uploadDocument, type DocumentFormState } from "../actions";
+import { prepareUploadViaApi } from "@/lib/prepare-upload-client";
 
 const CATEGORIES = ["legal", "approvals", "internal", "handover", "other"];
 
@@ -29,7 +30,7 @@ export function DocumentUploadForm({ projectId }: { projectId: string }) {
           {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </Select>
         <div className="sm:col-span-2">
-          <FileUpload name="file" label="File" kind="document" required direct={(meta) => prepareDocumentUpload(projectId, meta)} />
+          <FileUpload name="file" label="File" kind="document" required direct={(meta) => prepareUploadViaApi({ target: "document", projectId }, meta)} />
         </div>
         <label className="mb-3 flex items-center gap-2 text-sm text-sand sm:col-span-2">
           <input type="checkbox" name="client_visible" className="h-4 w-4 rounded border-border" />

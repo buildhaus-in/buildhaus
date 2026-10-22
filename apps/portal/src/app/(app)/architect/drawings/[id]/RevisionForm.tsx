@@ -3,7 +3,8 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Card, Button, FileUpload } from "@buildhaus/ui";
 import { Textarea } from "@buildhaus/ui";
 import { ErrorState } from "@buildhaus/ui";
-import { createRevision, prepareDrawingUpload, type DrawingFormState } from "../actions";
+import { createRevision, type DrawingFormState } from "../actions";
+import { prepareUploadViaApi } from "@/lib/prepare-upload-client";
 
 function Submit({ nextRevisionNo }: { nextRevisionNo: number }) {
   const { pending } = useFormStatus();
@@ -42,7 +43,7 @@ export function RevisionForm({
       )}
       <form action={formAction} className="grid gap-x-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <FileUpload name="file" label="File" kind="drawing" required direct={(meta) => prepareDrawingUpload({ drawingId }, meta)} helperText={`Replaces the file for ${drawingNo} Rev ${nextRevisionNo} — PDF or image, max 10MB.`} />
+          <FileUpload name="file" label="File" kind="drawing" required direct={(meta) => prepareUploadViaApi({ target: "drawing", drawingId }, meta)} helperText={`Replaces the file for ${drawingNo} Rev ${nextRevisionNo} — PDF or image, max 10MB.`} />
         </div>
         <div className="sm:col-span-2">
           <Textarea label="Notes" name="notes" placeholder="What changed in this revision?" />

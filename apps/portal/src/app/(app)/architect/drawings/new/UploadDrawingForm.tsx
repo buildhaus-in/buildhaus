@@ -4,7 +4,8 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Card, Button, FileUpload } from "@buildhaus/ui";
 import { Input, Select, Textarea } from "@buildhaus/ui";
 import { ErrorState } from "@buildhaus/ui";
-import { createDrawing, prepareDrawingUpload, type DrawingFormState } from "../actions";
+import { createDrawing, type DrawingFormState } from "../actions";
+import { prepareUploadViaApi } from "@/lib/prepare-upload-client";
 
 const DISCIPLINES = ["architectural", "structural", "electrical", "plumbing", "interior", "elevation", "landscape", "shop_drawing", "as_built"];
 
@@ -42,7 +43,7 @@ export function UploadDrawingForm({ projects }: { projects: { id: string; code: 
           <Input label="Title" name="title" placeholder="Kitchen layout detail" required />
         </div>
         <div className="sm:col-span-2">
-          <FileUpload name="file" label="Drawing file" kind="drawing" required direct={(meta) => prepareDrawingUpload({ projectId: selectedProject() }, meta)} helperText="Choose the project first — PDF or image, max 10MB." />
+          <FileUpload name="file" label="Drawing file" kind="drawing" required direct={(meta) => prepareUploadViaApi({ target: "drawing", projectId: selectedProject() }, meta)} helperText="Choose the project first — PDF or image, max 10MB." />
         </div>
         <div className="sm:col-span-2">
           <Textarea label="Notes" name="notes" placeholder="First issue for internal review." />
