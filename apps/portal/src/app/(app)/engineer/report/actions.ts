@@ -1,15 +1,6 @@
 "use server";
 import { createClient, uploadFile } from "@buildhaus/database";
 import { validateFile } from "@buildhaus/utils";
-// `File` only became a Node.js global in v20 — this action runs on
-// whatever Node version the server process actually has (confirmed live:
-// this crashed with "File is not defined" under Node 18, since nothing
-// here previously imported it and just used the bare global). node:buffer
-// has exported a stable File since Node 18.13; aliased rather than
-// shadowing the ambient DOM `File` type this file's own annotations (and
-// uploadFile()'s signature) already rely on — only used for the runtime
-// `instanceof` check below, never as a type.
-import { File as NodeFile } from "node:buffer";
 import { assertProjectAccess, assertRole } from "@/lib/authz";
 import { throwIfError } from "@/lib/mutation";
 import { revalidatePath } from "next/cache";
@@ -23,26 +14,41 @@ function textOrNull(v: FormDataEntryValue | null): string {
   return String(v ?? "").trim();
 }
 
+// Duck-typed rather than `instanceof File`: which File class a Server
+// Action's FormData hands back depends on the Node version and Next's own
+// multipart parser, and a failed instanceof check here used to drop the
+// photo without a word while the rest of the report saved.
+function chosenFile(v: FormDataEntryValue | null): File | null {
+  if (!v || typeof v === "string") return null;
+  const f = v as unknown as File;
+  return typeof f.arrayBuffer === "function" && typeof f.size === "number" && f.size > 0 ? f : null;
+}
+
+function fail(projectId: string, message: string): never {
+  const q = projectId ? `project=${encodeURIComponent(projectId)}&` : "";
+  redirect(`/engineer/report?${q}error=${encodeURIComponent(message)}`);
+}
+
 // Previously only checked "is anyone signed in" — never role or project
 // membership, so any authenticated user could write a daily report against
 // any project_id. See engineer/attendance/actions.ts for the full rationale.
 async function persistReport(formData: FormData, status: "draft" | "submitted") {
   const supabase = createClient();
   let ctx;
+  const projectId = String(formData.get("project_id") || "");
   try {
     ctx = await assertRole("site_engineer");
   } catch {
-    return;
+    fail(projectId, "Your session has expired — please sign in again.");
   }
 
-  const projectId = String(formData.get("project_id") || "");
   const reportDate = String(formData.get("report_date") || "");
   const existingId = textOrNull(formData.get("report_id"));
-  if (!projectId || !reportDate) return;
+  if (!projectId || !reportDate) fail(projectId, "Choose a project before saving the report.");
   try {
     await assertProjectAccess(supabase, projectId, ctx);
   } catch {
-    return;
+    fail(projectId, "You're not assigned to this project.");
   }
   if (existingId) {
     // report_id is caller-supplied too — without this, an engineer could
@@ -55,11 +61,11 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
       .select("project_id")
       .eq("id", existingId)
       .maybeSingle();
-    if (!existing) return;
+    if (!existing) fail(projectId, "That report no longer exists — reload the page.");
     try {
       await assertProjectAccess(supabase, existing.project_id, ctx);
     } catch {
-      return;
+      fail(projectId, "You're not assigned to this report's project.");
     }
   }
 
@@ -73,21 +79,24 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
   // were uploaded earlier and aren't being replaced.
   const photoUploads: { index: number; file: File }[] = [];
   for (let i = 0; i < PHOTO_ROWS; i++) {
-    const file = formData.get(`photo_file_${i}`);
-    if (file instanceof NodeFile && file.size > 0) {
-      // Narrowed to node:buffer's File (see the import comment above), not
-      // the ambient DOM File type validateFile()/uploadFile() declare —
-      // functionally compatible (both only ever use .size/.type/
-      // .arrayBuffer() here), so cast rather than duplicating those
-      // functions' signatures for a distinction with no runtime difference.
-      const webFile = file as unknown as File;
-      const validationError = validateFile(webFile, "photo");
-      if (validationError) {
-        redirect(
-          `/engineer/report?project=${projectId}&error=${encodeURIComponent(`Photo ${i + 1}: ${validationError}`)}`
-        );
-      }
-      photoUploads.push({ index: i, file: webFile });
+    const file = chosenFile(formData.get(`photo_file_${i}`));
+    if (file) {
+      const validationError = validateFile(file, "photo");
+      if (validationError) fail(projectId, `Photo ${i + 1}: ${validationError}`);
+      photoUploads.push({ index: i, file });
+    }
+  }
+
+  // Upload before writing any rows, so a failed upload leaves the report
+  // (and its existing photos) exactly as it was.
+  const uploadedUrls = new Map<number, string>();
+  for (const { index, file } of photoUploads) {
+    try {
+      const uploaded = await uploadFile({ file, filename: file.name, folder: `daily-reports/${projectId}` });
+      uploadedUrls.set(index, uploaded.url);
+    } catch (e) {
+      console.error("daily report photo upload failed", e);
+      fail(projectId, `Photo ${index + 1} couldn't be uploaded — nothing was saved. Please try again.`);
     }
   }
 
@@ -125,7 +134,7 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
     if (error) throw new Error(error.message || "Couldn't save the report.");
     reportId = created?.id ?? null;
   }
-  if (!reportId) return;
+  if (!reportId) fail(projectId, "Couldn't save the report — please try again.");
 
   // Replace child rows wholesale — simplest correct way to sync a small,
   // fixed-slot repeatable-row form without diffing.
@@ -166,16 +175,8 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
   }
   for (let i = 0; i < PHOTO_ROWS; i++) {
     const caption = textOrNull(formData.get(`photo_caption_${i}`));
-    const upload = photoUploads.find((p) => p.index === i);
-    let url = textOrNull(formData.get(`photo_existing_url_${i}`)); // kept unless replaced below
-    if (upload) {
-      const uploaded = await uploadFile({
-        file: upload.file,
-        filename: upload.file.name,
-        folder: `daily-reports/${projectId}`,
-      });
-      url = uploaded.url;
-    }
+    // A newly uploaded photo replaces the slot's existing one.
+    const url = uploadedUrls.get(i) ?? textOrNull(formData.get(`photo_existing_url_${i}`));
     if (url) {
       throwIfError(
         await supabase.from("daily_report_photos").insert({ daily_report_id: reportId, url, caption }),

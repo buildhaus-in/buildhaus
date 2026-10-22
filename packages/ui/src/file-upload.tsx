@@ -35,14 +35,35 @@ export function FileUpload({
   // Component's <form action={someServerAction}> tree, since it's all one
   // DOM tree at render time.
   const { pending } = useFormStatus();
-  const isDisabled = disabled || pending;
+  const [compressing, setCompressing] = useState(false);
+  const isDisabled = disabled || pending || compressing;
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    let file = input.files?.[0];
     setError("");
     if (!file) {
       setFileName("");
       return;
+    }
+    // Site photos straight off a phone camera are 3–6MB each, and the
+    // production portal runs on Vercel, which rejects any request body over
+    // 4.5MB before the Server Action ever sees it (not configurable — the
+    // bodySizeLimit in next.config only raises Next's own cap). Shrinking
+    // each photo here keeps a whole daily report (3 photos) well under that.
+    if (kind === "photo") {
+      setCompressing(true);
+      try {
+        const smaller = await shrinkPhoto(file);
+        if (smaller !== file) {
+          const dt = new DataTransfer();
+          dt.items.add(smaller);
+          input.files = dt.files;
+          file = smaller;
+        }
+      } finally {
+        setCompressing(false);
+      }
     }
     const err = validateFile(file, kind);
     if (err) {
@@ -93,7 +114,60 @@ export function FileUpload({
       ) : (
         <div className="mt-1 text-xs text-muted">{helperText ?? limits.label}</div>
       )}
+      {compressing && <div className="mt-1 text-xs text-brand">Preparing photo…</div>}
       {pending && <div className="mt-1 text-xs text-brand">Uploading…</div>}
     </div>
   );
+}
+
+// Longest edge and JPEG quality for site photos — plenty for reading a
+// report on any screen, and typically 300–800KB per photo.
+const PHOTO_MAX_EDGE = 2000;
+const PHOTO_QUALITY = 0.82;
+// Already-small images are left untouched rather than recompressed.
+const PHOTO_SKIP_BELOW_BYTES = 900 * 1024;
+
+// Downscales and re-encodes an image to JPEG in the browser. Returns the
+// original file whenever it's already small or the browser can't decode it
+// (e.g. HEIC on Android Chrome) — validateFile() then judges it as before.
+async function shrinkPhoto(file: File): Promise<File> {
+  if (file.size <= PHOTO_SKIP_BELOW_BYTES || !file.type.startsWith("image/") || file.type === "image/gif") return file;
+  try {
+    const bitmap = await decodeImage(file);
+    const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const g = canvas.getContext("2d");
+    if (!g) return file;
+    g.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    if ("close" in bitmap) bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", PHOTO_QUALITY));
+    if (!blob || blob.size >= file.size) return file;
+    const base = file.name.replace(/\.[^.]+$/, "") || "photo";
+    return new File([blob], `${base}.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
+  } catch {
+    return file;
+  }
+}
+
+// createImageBitmap honours EXIF orientation (so portrait phone shots stay
+// upright); the <img> fallback covers older Safari.
+async function decodeImage(file: File): Promise<ImageBitmap | HTMLImageElement> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      // fall through to <img>
+    }
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
