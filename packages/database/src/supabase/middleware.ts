@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isDemoMode } from "../demo/mode";
 import { requireSupabaseEnv } from "../env";
+import { timedFetch } from "./fetch";
 
 const DEMO_COOKIE = "bh_demo_session";
 type CookieToSet = { name: string; value: string; options: CookieOptions };
@@ -24,6 +25,7 @@ export async function updateSession(request: NextRequest) {
     url,
     anonKey,
     {
+      global: { fetch: timedFetch },
       cookies: {
         getAll() {
           return request.cookies.getAll();

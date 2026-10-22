@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { isDemoMode } from "../demo/mode";
 import { createDemoClient } from "../demo/client";
 import { requireSupabaseEnv } from "../env";
+import { timedFetch } from "./fetch";
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
@@ -19,6 +20,7 @@ export function createClient(): any {
     url,
     anonKey,
     {
+      global: { fetch: timedFetch },
       cookies: {
         getAll() {
           return cookieStore.getAll();

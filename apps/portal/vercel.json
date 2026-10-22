@@ -3,5 +3,8 @@
   "framework": "nextjs",
   "buildCommand": "cd ../.. && npm run build --workspace=apps/portal",
   "installCommand": "cd ../.. && npm install",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "regions": [
+    "syd1"
+  ]
 }

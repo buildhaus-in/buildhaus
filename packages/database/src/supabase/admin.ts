@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { isDemoMode } from "../demo/mode";
 import { createDemoClient } from "../demo/client";
 import { requireServiceRoleKey, requireSupabaseEnv } from "../env";
+import { timedFetch } from "./fetch";
 
 // Privileged client — SERVICE ROLE. Import ONLY in server actions/route
 // handlers, never in a client component. Bypasses RLS, so every caller must
@@ -13,5 +14,6 @@ export function createAdminClient(): any {
   const serviceRoleKey = requireServiceRoleKey();
   return createClient(url, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+    global: { fetch: timedFetch },
   });
 }
