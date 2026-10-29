@@ -1,10 +1,15 @@
 "use server";
+import { safeAction } from "@/lib/safe-action";
 import { createAdminClient } from "@buildhaus/database";
 import { IDS } from "@buildhaus/database";
 
 export type SiteVisitState = null | { error: string } | { ok: true };
 
 export async function submitSiteVisitRequest(_prev: SiteVisitState, formData: FormData): Promise<SiteVisitState> {
+  return safeAction("submitSiteVisitRequest", () => submitSiteVisitRequestUnsafe(formData));
+}
+
+async function submitSiteVisitRequestUnsafe(formData: FormData): Promise<SiteVisitState> {
   const name = String(formData.get("name") || "").trim();
   const mobile = String(formData.get("mobile") || "").trim();
   const email = String(formData.get("email") || "").trim();

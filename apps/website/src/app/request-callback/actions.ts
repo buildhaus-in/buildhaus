@@ -1,10 +1,15 @@
 "use server";
+import { safeAction } from "@/lib/safe-action";
 import { createAdminClient } from "@buildhaus/database";
 import { IDS } from "@buildhaus/database";
 
 export type CallbackState = null | { error: string } | { ok: true };
 
 export async function submitCallbackRequest(_prev: CallbackState, formData: FormData): Promise<CallbackState> {
+  return safeAction("submitCallbackRequest", () => submitCallbackRequestUnsafe(formData));
+}
+
+async function submitCallbackRequestUnsafe(formData: FormData): Promise<CallbackState> {
   const name = String(formData.get("name") || "").trim();
   const mobile = String(formData.get("mobile") || "").trim();
   const preferred_time = String(formData.get("preferred_time") || "").trim();

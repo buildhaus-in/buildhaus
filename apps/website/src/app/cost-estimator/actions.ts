@@ -1,4 +1,5 @@
 "use server";
+import { safeAction } from "@/lib/safe-action";
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@buildhaus/database";
@@ -104,6 +105,10 @@ async function computeFromInputs(inputs: RawEstimateInputs): Promise<{ result?: 
 }
 
 export async function computeEstimate(_prev: ComputeState, formData: FormData): Promise<ComputeState> {
+  return safeAction("computeEstimate", () => computeEstimateUnsafe(formData));
+}
+
+async function computeEstimateUnsafe(formData: FormData): Promise<ComputeState> {
   const inputs = readInputs(formData);
   const { result, error } = await computeFromInputs(inputs);
   if (error || !result) return { error: error ?? "Could not compute an estimate." };
@@ -111,6 +116,10 @@ export async function computeEstimate(_prev: ComputeState, formData: FormData): 
 }
 
 export async function generateQuotation(_prev: ComputeState, formData: FormData): Promise<ComputeState> {
+  return safeAction("generateQuotation", () => generateQuotationUnsafe(formData));
+}
+
+async function generateQuotationUnsafe(formData: FormData): Promise<ComputeState> {
   const inputs = readInputs(formData);
   const { result, error } = await computeFromInputs(inputs);
   if (error || !result) return { error: error ?? "Could not compute an estimate." };
