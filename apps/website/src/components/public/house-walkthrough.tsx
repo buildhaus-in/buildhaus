@@ -23,20 +23,26 @@ import { colors } from "@buildhaus/brand";
 // Real-ESRGAN (realesrgan-x4plus) for clarity ("the video is not clarity"),
 // joined, resized to 1920x1080, motion-interpolated to 48 fps (481 frames,
 // for smoother scrubbing) and cut into WebP frame sequences (public/
-// walkthrough/lg at 1920px, /sm at 1080px), because scrubbing a normal video
+// walkthrough/lg at 1920x1080; /sm is a 576x640 centre crop for portrait
+// phones, which only ever show the middle of the frame — about half the
+// bytes), because scrubbing a normal video
 // on scroll stutters: every frame here decodes on its own. When the Owner
 // re-exports from PixVerse at 1080p without the watermark, re-run the same
-// pipeline (upscale is then optional) to swap it in.
+// pipeline (upscale is then optional) to swap it in. Until then every frame
+// has its top 14% cropped off (centred, re-scaled to full size) to remove the
+// PixVerse.ai watermark and logo glitch in the top-right corner.
 //
 // Progressive enhancement / performance:
 //   * SSR renders the first frame as a plain <img> plus the first caption,
 //     and every chapter's text in an sr-only list (crawlers + screen readers
 //     get all of it; the animated captions are aria-hidden duplicates).
 //   * Frames only start downloading when the section is ~1 screen away:
-//     every 6th frame first (so the whole film works almost at once), then
+//     every 12th frame first (so the whole film works almost at once), then
 //     the gaps; the canvas draws the nearest frame already loaded. Phones
-//     (and Save-Data) load every other frame only — half the data, and still
-//     smooth at phone size.
+//     load every other frame only — half the data, and still smooth at
+//     phone size; Save-Data loads every third.
+//   * Frames are served with a year-long immutable cache (next.config.mjs),
+//     so FRAMES_VERSION must be bumped whenever the frame files change.
 //   * Frames are drawn whole — never blended — so every frame stays sharp.
 //   * Portrait phones show the landscape footage as a large band fading into
 //     the dark panel colour rather than cropping it to the screen's shape,
@@ -114,7 +120,12 @@ const chapterAt = (frame: number) => {
   return c;
 };
 const NAVY = colors.navy;
-const frameSrc = (size: "lg" | "sm", i: number) => `/walkthrough/${size}/${String(i).padStart(3, "0")}.webp`;
+/** Bump whenever the frame files change — they are cached as immutable. */
+const FRAMES_VERSION = 2;
+const frameSrc = (size: "lg" | "sm", i: number) =>
+  `/walkthrough/${size}/${String(i).padStart(3, "0")}.webp?v=${FRAMES_VERSION}`;
+/** Matches the portrait branch of draw(): the only place the narrow /sm crop fits. */
+const PHONE_MEDIA = "(max-width: 767px) and (orientation: portrait)";
 
 export function HouseWalkthrough() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -143,7 +154,7 @@ export function HouseWalkthrough() {
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    const size: "lg" | "sm" = window.innerWidth < 768 || conn?.saveData ? "sm" : "lg";
+    const size: "lg" | "sm" = window.matchMedia(PHONE_MEDIA).matches ? "sm" : "lg";
     const frames = framesRef.current;
 
     // ── Loading: coarse pass (every 6th frame), then fill, 6 at a time ──
@@ -152,9 +163,9 @@ export function HouseWalkthrough() {
     const startLoading = () => {
       if (loadingStarted) return;
       loadingStarted = true;
-      const stride = size === "sm" ? 2 : 1;
+      const stride = conn?.saveData ? 3 : size === "sm" ? 2 : 1;
       const all = Array.from({ length: FRAME_COUNT }, (_, i) => i).filter((i) => i % stride === 0);
-      const order = [...all.filter((i) => i % 6 === 0), ...all.filter((i) => i % 6 !== 0)];
+      const order = [...all.filter((i) => i % 12 === 0), ...all.filter((i) => i % 12 !== 0)];
       let next = 0;
       const pump = () => {
         if (cancelled || next >= order.length) return;
@@ -326,26 +337,37 @@ export function HouseWalkthrough() {
 
       <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
         {/* First frame, server-rendered — what no-JS visitors see. */}
-        {/* eslint-disable-next-line @next/next/no-img-element -- static first frame; the canvas takes over once JS runs */}
-        <img
-          src={frameSrc("lg", 0)}
-          alt=""
-          aria-hidden
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${live ? "opacity-0" : "opacity-100"}`}
-        />
+        <picture>
+          {/* Phones get the small crop — the same file the canvas starts from. */}
+          <source media={PHONE_MEDIA} srcSet={frameSrc("sm", 0)} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- static first frame; the canvas takes over once JS runs */}
+          <img
+            src={frameSrc("lg", 0)}
+            alt=""
+            aria-hidden
+            fetchPriority="high"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${live ? "opacity-0" : "opacity-100"}`}
+          />
+        </picture>
         <canvas ref={canvasRef} aria-hidden className="absolute inset-0 h-full w-full" />
 
         {/* Legibility scrims */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/15" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/15" aria-hidden />
         <div className="pointer-events-none absolute inset-y-0 left-0 w-full bg-gradient-to-r from-black/30 to-transparent sm:w-1/2" aria-hidden />
+        {/* Extra shade under the caption: the opening line drawing is pale and
+            busy, and its strokes ran straight through the headline. */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_75%_at_15%_100%,rgba(0,0,0,0.7),transparent_75%)]"
+          aria-hidden
+        />
 
         {/* Caption */}
         <div className="absolute inset-x-0 bottom-0 mx-auto max-w-6xl px-5 pb-16 sm:pb-20" aria-hidden>
           <div key={chapter} className="max-w-xl animate-[walkIn_700ms_cubic-bezier(0.2,0.7,0.2,1)_both]">
-            <div className="text-xs font-bold uppercase tracking-[0.25em] text-brand">
+            <div className="text-xs font-bold uppercase tracking-[0.25em] text-brand [text-shadow:0_1px_8px_rgba(0,0,0,0.7)]">
               {String(chapter + 1).padStart(2, "0")} · {CHAPTERS[chapter].label}
             </div>
-            <div className="mt-3 text-3xl font-black leading-[1.05] text-white drop-shadow sm:text-5xl lg:text-6xl">
+            <div className="mt-3 text-3xl font-black leading-[1.05] text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.55)] sm:text-5xl lg:text-6xl">
               {CHAPTERS[chapter].title}
             </div>
             <p className="mt-4 max-w-md text-sm text-white/80 sm:text-base">{CHAPTERS[chapter].body}</p>
