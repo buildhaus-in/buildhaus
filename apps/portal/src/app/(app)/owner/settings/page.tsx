@@ -13,7 +13,7 @@ export default async function SettingsPage() {
 
   const [{ data: org }, { data: settings }] = await Promise.all([
     supabase.from("organisations").select("id,name,city,state").eq("id", orgId).maybeSingle(),
-    supabase.from("organisation_settings").select("id,currency,timezone").eq("organisation_id", orgId).maybeSingle(),
+    supabase.from("organisation_settings").select("organisation_id,currency,timezone").eq("organisation_id", orgId).maybeSingle(),
   ]);
 
   return (

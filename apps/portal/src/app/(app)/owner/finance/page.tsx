@@ -27,8 +27,8 @@ export default async function FinancePage() {
     supabase.from("client_payment_schedules").select("id,project_id,milestone,percent,amount,due_date,status,projects(code,name)").order("due_date", { ascending: true }),
     supabase.from("client_invoices").select("id,invoice_no,amount,status,invoice_date,projects(code,name)").order("invoice_date", { ascending: false }),
     supabase.from("client_receipts").select("id,receipt_no,amount,receipt_date,mode,projects(code,name)").order("receipt_date", { ascending: false }),
-    supabase.from("supplier_bills").select("id,supplier_name,amount,outstanding,bill_date,projects(code,name)").order("bill_date", { ascending: false }),
-    supabase.from("contractor_bills").select("id,contractor_name,outstanding,bill_date,projects(code,name)").order("bill_date", { ascending: false }),
+    supabase.from("supplier_bills").select("id,amount,outstanding,bill_date,suppliers(name),projects(code,name)").order("bill_date", { ascending: false }),
+    supabase.from("contractor_bills").select("id,outstanding,bill_date,labour_contractors(name),projects(code,name)").order("bill_date", { ascending: false }),
     supabase.from("expenses").select("id,category,amount,expense_date,notes,projects(code,name)").order("expense_date", { ascending: false }),
     supabase.from("projects").select("id,code,name").order("created_at", { ascending: false }),
   ]);
@@ -167,7 +167,7 @@ export default async function FinancePage() {
             {supplierList.map((b: any) => (
               <div key={b.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <div>
-                  <div className="text-sandlight">{b.supplier_name}</div>
+                  <div className="text-sandlight">{b.suppliers?.name ?? "—"}</div>
                   <div className="text-xs text-muted">{b.projects?.name ?? "—"} · billed {dateLabel(b.bill_date)}</div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -192,7 +192,7 @@ export default async function FinancePage() {
             {contractorList.map((b: any) => (
               <div key={b.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                 <div>
-                  <div className="text-sandlight">{b.contractor_name}</div>
+                  <div className="text-sandlight">{b.labour_contractors?.name ?? "—"}</div>
                   <div className="text-xs text-muted">{b.projects?.name ?? "—"} · billed {dateLabel(b.bill_date)}</div>
                 </div>
                 <div className="flex items-center gap-3">

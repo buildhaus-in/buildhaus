@@ -32,10 +32,13 @@ export async function updateOrgSettings(
     if (!result.ok) return result;
   }
 
-  const { data: settingsRow } = await supabase.from("organisation_settings").select("id").eq("organisation_id", orgId).maybeSingle();
+  // organisation_settings is keyed by organisation_id (its primary key); it has
+  // no id column, so selecting/filtering on "id" failed and every save fell
+  // through to an insert that collided with the existing row.
+  const { data: settingsRow } = await supabase.from("organisation_settings").select("organisation_id").eq("organisation_id", orgId).maybeSingle();
   if (settingsRow) {
     const result = unwrap(
-      await supabase.from("organisation_settings").update({ currency, timezone }).eq("id", settingsRow.id),
+      await supabase.from("organisation_settings").update({ currency, timezone }).eq("organisation_id", orgId),
       "Couldn't update organisation settings."
     );
     if (!result.ok) return result;

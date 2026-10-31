@@ -13,7 +13,7 @@ export default async function LabourPage() {
   const [{ data: contractors }, { data: attendance }, { data: bills }, { data: projects }] = await Promise.all([
     supabase.from("labour_contractors").select("id,name,mobile").order("name", { ascending: true }),
     supabase.from("labour_attendance").select("id,attendance_date,present_count,trade,projects(name),labour_contractors(name)").order("attendance_date", { ascending: false }).limit(20),
-    supabase.from("contractor_bills").select("id,contractor_name,outstanding,bill_date,projects(name)").order("bill_date", { ascending: false }),
+    supabase.from("contractor_bills").select("id,outstanding,bill_date,labour_contractors(name),projects(name)").order("bill_date", { ascending: false }),
     supabase.from("projects").select("id,code,name").order("created_at", { ascending: false }),
   ]);
 
@@ -92,7 +92,7 @@ export default async function LabourPage() {
             {billList.map((b: any) => (
               <div key={b.id} className="flex items-center justify-between py-2.5 text-sm">
                 <div>
-                  <div className="text-sandlight">{b.contractor_name}</div>
+                  <div className="text-sandlight">{b.labour_contractors?.name ?? "—"}</div>
                   <div className="text-xs text-muted">{b.projects?.name ?? "—"} · billed {dateLabel(b.bill_date)}</div>
                 </div>
                 <Badge tone={Number(b.outstanding) > 0 ? "danger" : "ok"}>{inr(b.outstanding)}</Badge>
