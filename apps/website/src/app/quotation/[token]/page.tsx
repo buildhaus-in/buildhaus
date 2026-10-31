@@ -257,8 +257,8 @@ export default async function PublicQuotationPage({ params }: { params: { token:
                 above the request buttons rather than tucked beneath them. */}
             <div className="mb-5 flex flex-col items-start gap-4 rounded-xl border-2 border-[#25D366]/50 bg-[#25D366]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div>
-                <div className="font-bold text-ivory">Questions about this quotation?</div>
-                <p className="mt-1 text-sm text-sand">Chat with us on WhatsApp — your quotation number is already in the message.</p>
+                <div className="text-sm font-bold text-ivory">Questions about this quotation?</div>
+                <p className="mt-1 text-xs text-muted">Chat with us on WhatsApp — your quotation number is already in the message.</p>
               </div>
               <WhatsAppButton
                 variant="solid"
