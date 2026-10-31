@@ -7,6 +7,7 @@ import { Button, Card, StatCard } from "@buildhaus/ui";
 import { inr, inrFull, dateLabel } from "@buildhaus/utils";
 import { computeEstimate, generateQuotation, ComputeState, RawEstimateInputs } from "./actions";
 import { OPTIONAL_WORKS } from "@buildhaus/utils";
+import { WhatsAppButton } from "@/components/public/whatsapp-button";
 
 const BUILDING_TYPES = [
   { value: "independent_house", label: "Independent House" },
@@ -273,6 +274,15 @@ export function EstimatorForm({ packages, defaultPackageKey }: { packages: Packa
             {hiddenFields?.map(([key, value]) => <input key={key} type="hidden" name={key} value={value} />)}
             <GenerateSubmit />
           </form>
+
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">Questions about this estimate? Ask us on WhatsApp.</p>
+            <WhatsAppButton
+              label="Discuss this estimate on WhatsApp"
+              message={`Hi Buildhaus, I used your cost estimator: ${result.builtupAreaSqft.toLocaleString("en-IN")} sqft, ${result.packageLabel} package, about ${inr(result.totalCost)}. I'd like to discuss it.`}
+              className="w-full sm:w-auto"
+            />
+          </div>
         </div>
       )}
 

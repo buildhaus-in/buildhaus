@@ -1,6 +1,7 @@
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { PageHero } from "@/components/public/page-hero";
 import { MrHaus } from "@/components/public/mr-haus";
+import { WhatsAppButton } from "@/components/public/whatsapp-button";
 import { EnquiryForm } from "./enquiry-form";
 
 export default function EnquiryPage() {
@@ -21,6 +22,10 @@ export default function EnquiryPage() {
 
       <section className="mx-auto max-w-2xl px-5 pb-20">
         <EnquiryForm />
+        <div className="mt-5 flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-muted">Rather message us? We reply on WhatsApp too.</p>
+          <WhatsAppButton message="Hi Buildhaus, I'd like to discuss building with you." className="w-full sm:w-auto" />
+        </div>
       </section>
 
       <PublicFooter />

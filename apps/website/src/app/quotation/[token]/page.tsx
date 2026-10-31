@@ -3,6 +3,7 @@ import { createAdminClient } from "@buildhaus/database";
 import { PublicHeader, PublicFooter } from "@/components/public/site-chrome";
 import { Card, Badge, StatCard, EmptyState, buttonClass } from "@buildhaus/ui";
 import { inr, inrFull, sqft, dateLabel } from "@buildhaus/utils";
+import { WhatsAppButton } from "@/components/public/whatsapp-button";
 import { PrintButtons, QuotationRequestActions } from "./quotation-actions";
 
 // Public quotation links are looked up by an unguessable token (never the
@@ -253,6 +254,14 @@ export default async function PublicQuotationPage({ params }: { params: { token:
           <Card className="print:hidden">
             <div className="mb-4 text-sm font-bold text-ivory">Want to move forward?</div>
             <QuotationRequestActions leadId={quotation.lead_id} quotationNo={quotation.quotation_no} />
+            <div className="mt-4 flex flex-col items-start gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted">Or talk it through with us on WhatsApp.</p>
+              <WhatsAppButton
+                label="Discuss this quotation on WhatsApp"
+                message={`Hi Buildhaus, I'd like to discuss my quotation ${quotation.quotation_no}${version?.total_cost ? ` (${inr(version.total_cost)})` : ""}.`}
+                className="w-full sm:w-auto"
+              />
+            </div>
           </Card>
         </div>
       </section>

@@ -11,6 +11,11 @@ export async function safeAction<T>(name: string, run: () => Promise<T>): Promis
   try {
     return await run();
   } catch (e) {
+    // redirect() and notFound() work by throwing (digest "NEXT_REDIRECT…" /
+    // "NEXT_NOT_FOUND"); they must reach Next, or "Generate My Quotation"
+    // saves the quotation but never opens it.
+    const digest = (e as { digest?: unknown } | null)?.digest;
+    if (typeof digest === "string" && digest.startsWith("NEXT_")) throw e;
     console.error(`[${name}] failed:`, e);
     return { error: FALLBACK };
   }
