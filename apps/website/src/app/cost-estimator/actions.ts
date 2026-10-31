@@ -3,7 +3,7 @@ import { safeAction } from "@/lib/safe-action";
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@buildhaus/database";
-import { IDS } from "@buildhaus/database";
+import { websiteOrgId } from "@/lib/org";
 import { buildEstimate, EstimateResult, EstimatorPackageRow, EstimatorRateRow } from "@buildhaus/utils";
 
 export interface RawEstimateInputs {
@@ -141,14 +141,17 @@ async function generateQuotationUnsafe(formData: FormData): Promise<ComputeState
   // below) — would have silently produced no lead and no quotation, with
   // the visitor told their quotation was ready regardless.
   const { data: leadNo, error: leadNoError } = await supabase.rpc("next_code", {
-    p_org: IDS.org, p_scope: "lead", p_prefix: "BH-L",
+    p_org: websiteOrgId(), p_scope: "lead", p_prefix: "BH-L",
   });
-  if (leadNoError) return { error: "Couldn't generate your quotation right now. Please try again." };
+  if (leadNoError) {
+    console.error("[cost-estimator] leadNoError:", leadNoError);
+    return { error: "Couldn't generate your quotation right now. Please try again." };
+  }
 
   const { data: lead, error: leadError } = await supabase
     .from("leads")
     .insert({
-      organisation_id: IDS.org,
+      organisation_id: websiteOrgId(),
       lead_no: leadNo,
       customer_name: inputs.name,
       mobile: inputs.mobile,
@@ -171,12 +174,15 @@ async function generateQuotationUnsafe(formData: FormData): Promise<ComputeState
     })
     .select()
     .single();
-  if (leadError || !lead) return { error: "Couldn't generate your quotation right now. Please try again." };
+  if (leadError || !lead) {
+    console.error("[cost-estimator] leadError:", leadError);
+    return { error: "Couldn't generate your quotation right now. Please try again." };
+  }
 
   // The real Postgres next_code(p_org, p_scope, p_prefix) requires the org id
   // (the demo mock defaults it, which masked this) — pass it explicitly.
   const { data: quotationNo } = await supabase.rpc("next_code", {
-    p_org: IDS.org, p_scope: "quotation", p_prefix: "BH-Q",
+    p_org: websiteOrgId(), p_scope: "quotation", p_prefix: "BH-Q",
   });
 
   const validUntil = new Date();
@@ -185,7 +191,7 @@ async function generateQuotationUnsafe(formData: FormData): Promise<ComputeState
   const { data: quotation } = await supabase
     .from("quotations")
     .insert({
-      organisation_id: IDS.org,
+      organisation_id: websiteOrgId(),
       quotation_no: quotationNo ?? `BH-Q-${Date.now()}`,
       lead_id: lead?.id ?? null,
       client_id: null,

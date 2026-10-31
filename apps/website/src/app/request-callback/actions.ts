@@ -1,7 +1,7 @@
 "use server";
 import { safeAction } from "@/lib/safe-action";
 import { createAdminClient } from "@buildhaus/database";
-import { IDS } from "@buildhaus/database";
+import { websiteOrgId } from "@/lib/org";
 
 export type CallbackState = null | { error: string } | { ok: true };
 
@@ -29,14 +29,17 @@ async function submitCallbackRequestUnsafe(formData: FormData): Promise<Callback
   // missing from this insert entirely (Demo Mode's schema-less writes never
   // surfaced it). A real Postgres project rejects the insert without it.
   const { data: leadNo, error: leadNoError } = await supabase.rpc("next_code", {
-    p_org: IDS.org, p_scope: "lead", p_prefix: "BH-L",
+    p_org: websiteOrgId(), p_scope: "lead", p_prefix: "BH-L",
   });
-  if (leadNoError) return { error: "Couldn't submit your request right now. Please try again." };
+  if (leadNoError) {
+    console.error("[request-callback] leadNoError:", leadNoError);
+    return { error: "Couldn't submit your request right now. Please try again." };
+  }
 
   const { data: lead, error: leadError } = await supabase
     .from("leads")
     .insert({
-      organisation_id: IDS.org,
+      organisation_id: websiteOrgId(),
       lead_no: leadNo,
       customer_name: name,
       mobile,
@@ -51,7 +54,10 @@ async function submitCallbackRequestUnsafe(formData: FormData): Promise<Callback
   // Previously: this error was discarded and the function always returned
   // { ok: true } regardless, so a rejected insert looked identical to a
   // successful submission from the visitor's side.
-  if (leadError || !lead) return { error: "Couldn't submit your request right now. Please try again." };
+  if (leadError || !lead) {
+    console.error("[request-callback] leadError:", leadError);
+    return { error: "Couldn't submit your request right now. Please try again." };
+  }
 
   await supabase.from("lead_activities").insert({
     lead_id: lead.id,
