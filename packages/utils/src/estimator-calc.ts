@@ -15,13 +15,10 @@ export interface OptionalWorkDef {
 // Flat markup on the base (area x package rate) cost for scope the base
 // package rate doesn't cover. Kept small and clearly separate from the
 // package rate itself.
+// The website estimator offers interiors as its only add-on (Owner's call,
+// 2026-10-31). buildEstimate() ignores any key not listed here, so a request
+// carrying a removed option (parking, lift, basement…) is priced without it.
 export const OPTIONAL_WORKS: OptionalWorkDef[] = [
-  { key: "parking", label: "Covered car parking", markupPercent: 1.5 },
-  { key: "lift", label: "Passenger lift provision", markupPercent: 4 },
-  { key: "basement", label: "Basement / cellar", markupPercent: 6 },
-  { key: "compound_wall", label: "Compound wall & gate", markupPercent: 2 },
-  { key: "sump", label: "Underground sump", markupPercent: 0.8 },
-  { key: "septic_tank", label: "Septic tank", markupPercent: 0.8 },
   { key: "interior_works", label: "Interior works (modular kitchen, wardrobes, false ceiling)", markupPercent: 8 },
 ];
 

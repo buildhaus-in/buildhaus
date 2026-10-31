@@ -253,15 +253,21 @@ export default async function PublicQuotationPage({ params }: { params: { token:
           <PrintButtons pdfHref={`/quotation/${params.token}/pdf`} />
           <Card className="print:hidden">
             <div className="mb-4 text-sm font-bold text-ivory">Want to move forward?</div>
-            <QuotationRequestActions leadId={quotation.lead_id} quotationNo={quotation.quotation_no} />
-            <div className="mt-4 flex flex-col items-start gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted">Or talk it through with us on WhatsApp.</p>
+            {/* The fastest route to a conversation, so it leads — highlighted
+                above the request buttons rather than tucked beneath them. */}
+            <div className="mb-5 flex flex-col items-start gap-4 rounded-xl border-2 border-[#128C7E]/50 bg-[#128C7E]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div>
+                <div className="font-bold text-ivory">Questions about this quotation?</div>
+                <p className="mt-1 text-sm text-sand">Chat with us on WhatsApp — your quotation number is already in the message.</p>
+              </div>
               <WhatsAppButton
+                variant="solid"
                 label="Discuss this quotation on WhatsApp"
                 message={`Hi Buildhaus, I'd like to discuss my quotation ${quotation.quotation_no}${version?.total_cost ? ` (${inr(version.total_cost)})` : ""}.`}
-                className="w-full sm:w-auto"
+                className="w-full shrink-0 sm:w-auto"
               />
             </div>
+            <QuotationRequestActions leadId={quotation.lead_id} quotationNo={quotation.quotation_no} />
           </Card>
         </div>
       </section>

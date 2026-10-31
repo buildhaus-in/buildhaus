@@ -4,23 +4,33 @@ import { whatsappUrl } from "@/lib/whatsapp";
 // Opens a WhatsApp chat with Buildhaus, the message already typed. A plain
 // link (no JS), so it works in server and client components alike; on a
 // phone wa.me hands straight over to the WhatsApp app.
+//
+// "solid" is the highlighted call to action (WhatsApp's darker teal-green,
+// which keeps white text readable — the bright #25D366 doesn't); "outline"
+// sits alongside other secondary buttons.
 export function WhatsAppButton({
   message,
   label = "Chat on WhatsApp",
+  variant = "outline",
   className,
 }: {
   message?: string;
   label?: string;
+  variant?: "outline" | "solid";
   className?: string;
 }) {
+  const solid = variant === "solid";
+  const classes = solid
+    ? "inline-flex items-center justify-center gap-2.5 rounded-lg bg-[#128C7E] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#128C7E]/30 transition hover:bg-[#0E7468] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#128C7E] print:hidden"
+    : buttonClass("outline", "inline-flex items-center justify-center gap-2 print:hidden");
   return (
     <a
       href={whatsappUrl(message)}
       target="_blank"
       rel="noopener noreferrer"
-      className={buttonClass("outline", `inline-flex items-center justify-center gap-2 print:hidden ${className ?? ""}`)}
+      className={`${classes} ${className ?? ""}`}
     >
-      <svg viewBox="0 0 24 24" aria-hidden className="h-4 w-4 shrink-0 fill-[#25D366]">
+      <svg viewBox="0 0 24 24" aria-hidden className={`shrink-0 ${solid ? "h-5 w-5 fill-white" : "h-4 w-4 fill-[#25D366]"}`}>
         <path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.5h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.21 3.07.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.04 21.5h-.01a9.43 9.43 0 0 1-4.81-1.32l-.34-.2-3.58.94.96-3.49-.23-.36a9.42 9.42 0 0 1-1.45-5.03c0-5.21 4.24-9.45 9.46-9.45 2.53 0 4.9.99 6.69 2.78a9.4 9.4 0 0 1 2.77 6.69c0 5.22-4.24 9.45-9.46 9.45zm8.05-17.5A11.3 11.3 0 0 0 12.04.67C5.77.67.66 5.77.66 12.04c0 2 .52 3.96 1.52 5.69L.57 23.33l5.73-1.5a11.33 11.33 0 0 0 5.73 1.47h.01c6.27 0 11.38-5.1 11.38-11.37 0-3.04-1.18-5.9-3.33-8.04z" />
       </svg>
       {label}

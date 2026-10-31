@@ -57,11 +57,16 @@ describe("buildEstimate — cost math", () => {
   });
 
   it("adds optional-work markups on top of the base cost", () => {
+    const result = buildEstimate(input({ optional_works: ["interior_works"] }), pkg, rates);
+    const interiorsAmt = Math.round((result.baseCost * 8) / 100);
+    expect(result.optionalWorks).toHaveLength(1);
+    expect(result.totalCost).toBe(result.baseCost + interiorsAmt);
+  });
+
+  it("ignores optional works the estimator no longer offers", () => {
     const result = buildEstimate(input({ optional_works: ["parking", "lift"] }), pkg, rates);
-    const parkingAmt = Math.round((result.baseCost * 1.5) / 100);
-    const liftAmt = Math.round((result.baseCost * 4) / 100);
-    expect(result.optionalWorks).toHaveLength(2);
-    expect(result.totalCost).toBe(result.baseCost + parkingAmt + liftAmt);
+    expect(result.optionalWorks).toHaveLength(0);
+    expect(result.totalCost).toBe(result.baseCost);
   });
 
   it("ignores unknown optional-work keys", () => {
