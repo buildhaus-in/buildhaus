@@ -124,7 +124,7 @@ export async function demoRpc(name: string, params: Record<string, any> = {}): P
       });
     });
 
-    db.updateWhere("leads", (l) => l.id === leadId, { stage: "won", converted_project_id: project.id });
+    db.updateWhere("leads", (l) => l.id === leadId, { stage: "won", client_id: client.id, project_id: project.id });
 
     return { data: { project_id: project.id, client_id: client.id }, error: null };
   }

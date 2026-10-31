@@ -114,7 +114,7 @@ describe("demoRpc('convert_lead_to_project')", () => {
 
     const updatedLead = db2.table("leads").find((l: any) => l.id === lead.id);
     expect(updatedLead?.stage).toBe("won");
-    expect(updatedLead?.converted_project_id).toBe(data.project_id);
+    expect(updatedLead?.project_id).toBe(data.project_id);
   });
 
   it("returns an error for an unknown lead id, without creating anything", async () => {

@@ -60,7 +60,7 @@ export interface Lead {
   stage: LeadStage | string;
   notes: string;
   source: LeadSource | string;
-  converted_project_id?: string | null;
+  project_id?: string | null;
   quotation_id?: string | null;
 }
 

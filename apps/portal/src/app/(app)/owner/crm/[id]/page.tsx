@@ -15,11 +15,16 @@ const STAGE_TONE: Record<string, "ok" | "warn" | "danger" | "brand" | "muted"> =
 export default async function LeadDetail({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const { data: lead } = await supabase
+  // project_id is the column convert_lead_to_project() sets (0011/0019).
+  // This used to select "converted_project_id", which exists only in Demo
+  // Mode — Postgres rejected the whole query, the error was ignored, and
+  // every lead opened as a 404.
+  const { data: lead, error } = await supabase
     .from("leads")
-    .select("id,customer_name,mobile,email,site_location,building_type,plot_size,builtup_area_sqft,floors,estimated_value,enquiry_date,follow_up_date,stage,notes,source,converted_project_id,lead_activities(id,type,note,created_at)")
+    .select("id,customer_name,mobile,email,site_location,building_type,plot_size,builtup_area_sqft,floors,estimated_value,enquiry_date,follow_up_date,stage,notes,source,project_id,lead_activities(id,type,note,created_at)")
     .eq("id", params.id)
     .maybeSingle();
+  if (error) throw new Error(`Couldn't load this lead: ${error.message}`);
   if (!lead) notFound();
 
   const { data: visits } = await supabase
@@ -42,11 +47,11 @@ export default async function LeadDetail({ params }: { params: { id: string } })
         <p className="text-sm text-muted">{lead.site_location ?? "—"} · {(lead.building_type ?? "").replace(/_/g, " ")}</p>
       </div>
 
-      {lead.stage === "won" && lead.converted_project_id && (
+      {lead.stage === "won" && lead.project_id && (
         <Card className="border-ok/30 bg-ok/5">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-sandlight">This lead was converted to a project.</span>
-            <Link href={`/owner/projects/${lead.converted_project_id}`} className={buttonClass("outline")}>Open project →</Link>
+            <Link href={`/owner/projects/${lead.project_id}`} className={buttonClass("outline")}>Open project →</Link>
           </div>
         </Card>
       )}
