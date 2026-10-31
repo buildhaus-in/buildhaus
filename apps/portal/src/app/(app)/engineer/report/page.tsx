@@ -6,6 +6,7 @@ import { Input, Textarea, Select } from "@buildhaus/ui";
 import { EmptyState, ErrorState } from "@buildhaus/ui";
 import { dateLabel, STANDARD_STAGES } from "@buildhaus/utils";
 import { saveDraftReport, submitReport } from "./actions";
+import { ShareReportToWhatsApp } from "./share-to-whatsapp";
 
 const WEATHER_OPTIONS = ["Sunny", "Cloudy", "Rain", "Overcast", "Windy", "Hot & humid"];
 const LABOUR_SLOTS = 5;
@@ -85,7 +86,7 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
       )}
 
       {readOnly ? (
-        <ReadOnlyReport report={report} labourRows={labourRows} materialRows={materialRows} photoRows={photoRows} />
+        <ReadOnlyReport report={report} project={activeProject} labourRows={labourRows} materialRows={materialRows} photoRows={photoRows} />
       ) : (
         <form action={saveDraftReport} className="space-y-6">
           <input type="hidden" name="project_id" value={projectId} />
@@ -189,10 +190,41 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
   );
 }
 
-function ReadOnlyReport({ report, labourRows, materialRows, photoRows }: { report: any; labourRows: any[]; materialRows: any[]; photoRows: any[] }) {
+// The WhatsApp message for the project group: what a client or the site team
+// wants at a glance — no internal notes (quality, delays, client instructions).
+function whatsappSummary(report: any, project: any, labourRows: any[]): string {
+  const labourTotal = labourRows.reduce((n, l) => n + (Number(l.count) || 0), 0);
+  const labourBreakdown = labourRows.filter((l) => l.category).map((l) => `${l.category} ${l.count}`).join(", ");
+  const lines = [
+    `🏗️ *${project ? `${project.code} · ${project.name}` : "Site update"}*`,
+    `Site update — ${dateLabel(report.report_date)}`,
+    report.stage && `Stage: ${report.stage}${report.floor ? ` (${report.floor})` : ""}`,
+    report.work_completed && `Work done: ${report.work_completed}`,
+    labourTotal > 0 && `Labour: ${labourTotal} on site${labourBreakdown ? ` (${labourBreakdown})` : ""}`,
+    report.tomorrow_plan && `Tomorrow: ${report.tomorrow_plan}`,
+    "— Buildhaus",
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+
+function ReadOnlyReport({ report, project, labourRows, materialRows, photoRows }: { report: any; project: any; labourRows: any[]; materialRows: any[]; photoRows: any[] }) {
   if (!report) return <EmptyState title="No report yet today" hint="Nothing was submitted for this project today." />;
   return (
     <div className="space-y-6">
+      <div className="rounded-xl border-2 border-[#25D366]/50 bg-[#25D366]/10 p-4 sm:p-5">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-sm font-bold text-ivory">Send this update to the project&apos;s WhatsApp group</div>
+            <p className="mt-1 text-xs text-muted">
+              Opens WhatsApp with today&apos;s summary{photoRows.length > 0 ? ` and ${photoRows.length} photo(s)` : ""} — choose the group and tap Send.
+            </p>
+          </div>
+          <ShareReportToWhatsApp
+            text={whatsappSummary(report, project, labourRows)}
+            photos={photoRows.map((p: any) => ({ url: p.url, caption: p.caption ?? null }))}
+          />
+        </div>
+      </div>
       <Card>
         <div className="mb-2 text-sm text-muted">
           {report.status === "approved" ? "Approved — read only." : "Submitted — awaiting Owner review."}
