@@ -3,9 +3,11 @@ import { createClient } from "@buildhaus/database";
 import { getUserContext } from "@/lib/session";
 import { Card, Button, Badge, StatusBadge, FileUpload, buttonClass, SubmitButton } from "@buildhaus/ui";
 import { Input, Textarea, Select } from "@buildhaus/ui";
-import { EmptyState, ErrorState } from "@buildhaus/ui";
+import { EmptyState } from "@buildhaus/ui";
 import { dateLabel, STANDARD_STAGES } from "@buildhaus/utils";
-import { saveDraftReport, submitReport } from "./actions";
+import { saveDraftReport, submitReport, deleteReport } from "./actions";
+import { DeleteUpdateButton } from "./delete-update-button";
+import { Notice } from "./notice";
 import { ShareReportToWhatsApp } from "./share-to-whatsapp";
 
 const WEATHER_OPTIONS = ["Sunny", "Cloudy", "Rain", "Overcast", "Windy", "Hot & humid"];
@@ -13,7 +15,7 @@ const LABOUR_SLOTS = 5;
 const MATERIAL_SLOTS = 5;
 const PHOTO_SLOTS = 3;
 
-export default async function DailyReport({ searchParams }: { searchParams: { project?: string; error?: string } }) {
+export default async function DailyReport({ searchParams }: { searchParams: { project?: string; error?: string; done?: string } }) {
   const supabase = createClient();
   const ctx = await getUserContext();
   const today = new Date().toISOString().slice(0, 10);
@@ -42,27 +44,41 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
     : projects[0].id;
   const activeProject = projects.find((p: any) => p.id === projectId);
 
-  const { data: report } = await supabase
+  // An engineer can post several updates a day (morning, evening, …). The
+  // form edits the latest draft or returned update if there is one,
+  // otherwise it starts a new update; submitted/approved ones are listed
+  // above it, each with its own WhatsApp share.
+  const { data: todaysReports, error: reportsError } = await supabase
     .from("daily_reports")
     .select("*, daily_report_labour(id,category,count), daily_report_materials(id,material,received,consumed,unit), daily_report_photos(id,url,caption)")
     .eq("project_id", projectId)
     .eq("engineer_id", ctx?.userId ?? "")
     .eq("report_date", today)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
+  if (reportsError) throw new Error(`Couldn't load today's updates: ${reportsError.message}`);
 
-  const readOnly = report?.status === "submitted" || report?.status === "approved";
+  const updates = (todaysReports ?? []).map((r: any, i: number) => ({ ...r, number: i + 1 }));
+  const filed = updates.filter((r: any) => r.status === "submitted" || r.status === "approved").reverse();
+  const report = [...updates].reverse().find((r: any) => r.status === "draft" || r.status === "returned") ?? null;
   const labourRows = report?.daily_report_labour ?? [];
   const materialRows = report?.daily_report_materials ?? [];
   const photoRows = report?.daily_report_photos ?? [];
+  const doneMessage = {
+    submitted: "Update submitted to the Owner. Share it to the WhatsApp group below.",
+    draft: "Draft saved.",
+    deleted: "Update deleted.",
+  }[searchParams.done ?? ""];
+  const formTitle = report
+    ? report.status === "returned" ? `Update ${report.number} — returned for correction` : `Update ${report.number} — draft`
+    : filed.length > 0 ? "Add another update" : "Today's update";
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-ivory">Daily report</h1>
-          <p className="text-sm text-muted">{dateLabel(today)}</p>
-        </div>
-        {report?.status && <StatusBadge status={report.status} />}
+      <div>
+        <h1 className="text-xl font-bold text-ivory">Daily report</h1>
+        <p className="text-sm text-muted">
+          {dateLabel(today)}{updates.length > 0 ? ` · ${updates.length} update${updates.length === 1 ? "" : "s"} today` : ""}
+        </p>
       </div>
 
       <Card>
@@ -76,7 +92,17 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
         </form>
       </Card>
 
-      {searchParams.error && <ErrorState message={searchParams.error} />}
+      {searchParams.error && <Notice tone="error" message={searchParams.error} />}
+      {!searchParams.error && doneMessage && <Notice tone="ok" message={doneMessage} />}
+
+      {filed.map((r: any) => (
+        <FiledUpdate key={r.id} report={r} project={activeProject} projectId={projectId} />
+      ))}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-ivory">{formTitle}</h2>
+        {report?.status && <StatusBadge status={report.status} />}
+      </div>
 
       {report?.status === "returned" && (
         <div className="rounded-xl2 border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
@@ -85,10 +111,7 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
         </div>
       )}
 
-      {readOnly ? (
-        <ReadOnlyReport report={report} project={activeProject} labourRows={labourRows} materialRows={materialRows} photoRows={photoRows} />
-      ) : (
-        <form action={saveDraftReport} className="space-y-6">
+      <form key={report?.id ?? `new-${updates.length}`} action={saveDraftReport} className="space-y-6">
           <input type="hidden" name="project_id" value={projectId} />
           <input type="hidden" name="report_date" value={today} />
           <input type="hidden" name="report_id" value={report?.id ?? ""} />
@@ -182,10 +205,10 @@ export default async function DailyReport({ searchParams }: { searchParams: { pr
           <div className="flex flex-wrap gap-3">
             <SubmitButton formAction={saveDraftReport} variant="outline" pendingLabel="Saving…">Save draft</SubmitButton>
             <SubmitButton formAction={submitReport} pendingLabel="Submitting…">Submit to Owner</SubmitButton>
+            {report && <DeleteUpdateButton action={deleteReport} />}
             <Link href="/engineer" className={buttonClass("ghost")}>Cancel</Link>
           </div>
         </form>
-      )}
     </div>
   );
 }
@@ -207,24 +230,56 @@ function whatsappSummary(report: any, project: any, labourRows: any[]): string {
   return lines.filter(Boolean).join("\n");
 }
 
-function ReadOnlyReport({ report, project, labourRows, materialRows, photoRows }: { report: any; project: any; labourRows: any[]; materialRows: any[]; photoRows: any[] }) {
-  if (!report) return <EmptyState title="No report yet today" hint="Nothing was submitted for this project today." />;
+function timeLabel(iso: string | null | undefined): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
+}
+
+// One submitted or approved update: its WhatsApp share up front, the full
+// report folded away, and Delete until the Owner approves it.
+function FiledUpdate({ report, project, projectId }: { report: any; project: any; projectId: string }) {
+  const labourRows = report.daily_report_labour ?? [];
+  const materialRows = report.daily_report_materials ?? [];
+  const photoRows = report.daily_report_photos ?? [];
+  return (
+    <div className="space-y-3 rounded-xl border-2 border-[#25D366]/50 bg-[#25D366]/10 p-4 sm:p-5">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold text-ivory">
+              Update {report.number}{report.submitted_at ? ` · ${timeLabel(report.submitted_at)}` : ""}
+            </span>
+            <StatusBadge status={report.status} />
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            Send it to the project&apos;s WhatsApp group: opens WhatsApp with the summary{photoRows.length > 0 ? ` and ${photoRows.length} photo(s)` : ""} — choose the group and tap Send.
+          </p>
+        </div>
+        <ShareReportToWhatsApp
+          text={whatsappSummary(report, project, labourRows)}
+          photos={photoRows.map((p: any) => ({ url: p.url, caption: p.caption ?? null }))}
+        />
+      </div>
+      <details className="group">
+        <summary className="cursor-pointer text-sm font-semibold text-brand">View full update</summary>
+        <div className="mt-3">
+          <ReportDetails report={report} labourRows={labourRows} materialRows={materialRows} photoRows={photoRows} />
+        </div>
+      </details>
+      {report.status !== "approved" && (
+        <form action={deleteReport}>
+          <input type="hidden" name="project_id" value={projectId} />
+          <input type="hidden" name="report_id" value={report.id} />
+          <DeleteUpdateButton action={deleteReport} />
+        </form>
+      )}
+    </div>
+  );
+}
+
+function ReportDetails({ report, labourRows, materialRows, photoRows }: { report: any; labourRows: any[]; materialRows: any[]; photoRows: any[] }) {
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border-2 border-[#25D366]/50 bg-[#25D366]/10 p-4 sm:p-5">
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-sm font-bold text-ivory">Send this update to the project&apos;s WhatsApp group</div>
-            <p className="mt-1 text-xs text-muted">
-              Opens WhatsApp with today&apos;s summary{photoRows.length > 0 ? ` and ${photoRows.length} photo(s)` : ""} — choose the group and tap Send.
-            </p>
-          </div>
-          <ShareReportToWhatsApp
-            text={whatsappSummary(report, project, labourRows)}
-            photos={photoRows.map((p: any) => ({ url: p.url, caption: p.caption ?? null }))}
-          />
-        </div>
-      </div>
       <Card>
         <div className="mb-2 text-sm text-muted">
           {report.status === "approved" ? "Approved — read only." : "Submitted — awaiting Owner review."}

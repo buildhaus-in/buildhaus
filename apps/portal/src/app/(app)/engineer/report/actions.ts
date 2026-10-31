@@ -58,14 +58,20 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
     // the report's ACTUAL project, not the one the form claims.
     const { data: existing } = await supabase
       .from("daily_reports")
-      .select("project_id")
+      .select("project_id,engineer_id,status")
       .eq("id", existingId)
       .maybeSingle();
-    if (!existing) fail(projectId, "That report no longer exists — reload the page.");
+    if (!existing) fail(projectId, "That update no longer exists — reload the page.");
     try {
       await assertProjectAccess(supabase, existing.project_id, ctx);
     } catch {
       fail(projectId, "You're not assigned to this report's project.");
+    }
+    if (existing.engineer_id !== ctx.userId) fail(projectId, "You can only edit your own updates.");
+    // Several updates a day are allowed now, so a submitted one is final for
+    // the engineer — a stale tab must not overwrite it.
+    if (existing.status === "submitted" || existing.status === "approved") {
+      fail(projectId, "That update was already submitted — add a new update instead.");
     }
   }
 
@@ -131,7 +137,14 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
     );
   } else {
     const { data: created, error } = await supabase.from("daily_reports").insert(header).select().single();
-    if (error) throw new Error(error.message || "Couldn't save the report.");
+    if (error) {
+      console.error("daily report insert failed", error);
+      // 23505: the database still has 0004's one-report-a-day rule —
+      // migration 0026 removes it.
+      fail(projectId, error.code === "23505"
+        ? "Only one update per day is allowed until the database is updated (migration 0026). Edit today's draft instead."
+        : `Couldn't save the update: ${error.message || "please try again."}`);
+    }
     reportId = created?.id ?? null;
   }
   if (!reportId) fail(projectId, "Couldn't save the report — please try again.");
@@ -187,6 +200,7 @@ async function persistReport(formData: FormData, status: "draft" | "submitted") 
 
   revalidatePath("/engineer/report");
   revalidatePath("/engineer");
+  redirect(`/engineer/report?project=${encodeURIComponent(projectId)}&done=${status}`);
 }
 
 export async function saveDraftReport(formData: FormData) {
@@ -195,4 +209,49 @@ export async function saveDraftReport(formData: FormData) {
 
 export async function submitReport(formData: FormData) {
   await persistReport(formData, "submitted");
+}
+
+// An engineer may delete their own update until the Owner approves it — an
+// approved update is the record the Owner signed off (and may already be
+// published to the client), so it stays. Child rows go with the report via
+// ON DELETE CASCADE; they're also deleted explicitly first so Demo Mode,
+// which has no cascades, behaves the same. The audit trigger on
+// daily_reports logs the deletion.
+export async function deleteReport(formData: FormData) {
+  const supabase = createClient();
+  const projectId = String(formData.get("project_id") || "");
+  const reportId = textOrNull(formData.get("report_id"));
+  let ctx;
+  try {
+    ctx = await assertRole("site_engineer");
+  } catch {
+    fail(projectId, "Your session has expired — please sign in again.");
+  }
+  if (!reportId) fail(projectId, "Nothing to delete — this update hasn't been saved yet.");
+
+  const { data: existing, error: readError } = await supabase
+    .from("daily_reports")
+    .select("project_id,engineer_id,status")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (readError) fail(projectId, `Couldn't delete the update: ${readError.message}`);
+  if (!existing) fail(projectId, "That update no longer exists — reload the page.");
+  try {
+    await assertProjectAccess(supabase, existing.project_id, ctx);
+  } catch {
+    fail(projectId, "You're not assigned to this report's project.");
+  }
+  if (existing.engineer_id !== ctx.userId) fail(projectId, "You can only delete your own updates.");
+  if (existing.status === "approved") fail(projectId, "Approved updates can't be deleted. Ask the Owner if it needs to be removed.");
+
+  for (const table of ["daily_report_labour", "daily_report_materials", "daily_report_photos"] as const) {
+    const { error } = await supabase.from(table).delete().eq("daily_report_id", reportId);
+    if (error) fail(projectId, `Couldn't delete the update: ${error.message}`);
+  }
+  const { error } = await supabase.from("daily_reports").delete().eq("id", reportId);
+  if (error) fail(projectId, `Couldn't delete the update: ${error.message}`);
+
+  revalidatePath("/engineer/report");
+  revalidatePath("/engineer");
+  redirect(`/engineer/report?project=${encodeURIComponent(existing.project_id)}&done=deleted`);
 }
