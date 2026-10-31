@@ -275,12 +275,16 @@ export function EstimatorForm({ packages, defaultPackageKey }: { packages: Packa
             <GenerateSubmit />
           </form>
 
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted">Questions about this estimate? Ask us on WhatsApp.</p>
+          <div className="flex flex-col items-start gap-4 rounded-xl border-2 border-[#128C7E]/50 bg-[#128C7E]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div>
+              <div className="font-bold text-ivory">Questions about this estimate?</div>
+              <p className="mt-1 text-sm text-sand">Chat with us on WhatsApp — your estimate details are already in the message.</p>
+            </div>
             <WhatsAppButton
+              variant="solid"
               label="Discuss this estimate on WhatsApp"
               message={`Hi Buildhaus, I used your cost estimator: ${result.builtupAreaSqft.toLocaleString("en-IN")} sqft, ${result.packageLabel} package, about ${inr(result.totalCost)}. I'd like to discuss it.`}
-              className="w-full sm:w-auto"
+              className="w-full shrink-0 sm:w-auto"
             />
           </div>
         </div>
