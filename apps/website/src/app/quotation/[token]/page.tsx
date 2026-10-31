@@ -255,7 +255,7 @@ export default async function PublicQuotationPage({ params }: { params: { token:
             <div className="mb-4 text-sm font-bold text-ivory">Want to move forward?</div>
             {/* The fastest route to a conversation, so it leads — highlighted
                 above the request buttons rather than tucked beneath them. */}
-            <div className="mb-5 flex flex-col items-start gap-4 rounded-xl border-2 border-[#128C7E]/50 bg-[#128C7E]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="mb-5 flex flex-col items-start gap-4 rounded-xl border-2 border-[#25D366]/50 bg-[#25D366]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div>
                 <div className="font-bold text-ivory">Questions about this quotation?</div>
                 <p className="mt-1 text-sm text-sand">Chat with us on WhatsApp — your quotation number is already in the message.</p>

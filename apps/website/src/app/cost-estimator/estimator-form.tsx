@@ -275,7 +275,7 @@ export function EstimatorForm({ packages, defaultPackageKey }: { packages: Packa
             <GenerateSubmit />
           </form>
 
-          <div className="flex flex-col items-start gap-4 rounded-xl border-2 border-[#128C7E]/50 bg-[#128C7E]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex flex-col items-start gap-4 rounded-xl border-2 border-[#25D366]/50 bg-[#25D366]/10 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
               <div className="font-bold text-ivory">Questions about this estimate?</div>
               <p className="mt-1 text-sm text-sand">Chat with us on WhatsApp — your estimate details are already in the message.</p>

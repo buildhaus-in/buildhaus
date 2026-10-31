@@ -5,8 +5,8 @@ import { whatsappUrl } from "@/lib/whatsapp";
 // link (no JS), so it works in server and client components alike; on a
 // phone wa.me hands straight over to the WhatsApp app.
 //
-// "solid" is the highlighted call to action (WhatsApp's darker teal-green,
-// which keeps white text readable — the bright #25D366 doesn't); "outline"
+// "solid" is the highlighted call to action in WhatsApp green (#25D366,
+// the Owner's choice; bold, larger text keeps the white label legible); "outline"
 // sits alongside other secondary buttons.
 export function WhatsAppButton({
   message,
@@ -21,7 +21,7 @@ export function WhatsAppButton({
 }) {
   const solid = variant === "solid";
   const classes = solid
-    ? "inline-flex items-center justify-center gap-2.5 rounded-lg bg-[#128C7E] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#128C7E]/30 transition hover:bg-[#0E7468] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#128C7E] print:hidden"
+    ? "inline-flex items-center justify-center gap-2.5 rounded-lg bg-[#25D366] px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-[#25D366]/30 transition hover:bg-[#1EBE5A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] print:hidden"
     : buttonClass("outline", "inline-flex items-center justify-center gap-2 print:hidden");
   return (
     <a
